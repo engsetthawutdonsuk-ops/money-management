@@ -3165,11 +3165,13 @@
         // Get current file SHA (needed for GitHub update)
         async function getGitHubFileSha() {
             try {
-                const res = await fetch(GH_API, {
+                const res = await fetch(GH_API + '?t=' + Date.now(), {
                     headers: {
                         'Authorization': 'token ' + getGHToken(),
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
+                        'Accept': 'application/vnd.github.v3+json',
+                        'If-None-Match': ''
+                    },
+                    cache: 'no-store'
                 });
                 if (res.ok) {
                     const json = await res.json();
@@ -3181,11 +3183,13 @@
 
         // Read data from GitHub
         async function ghRead() {
-            const res = await fetch(GH_API, {
+            const res = await fetch(GH_API + '?t=' + Date.now(), {
                 headers: {
                     'Authorization': 'token ' + getGHToken(),
-                    'Accept': 'application/vnd.github.v3+json'
-                }
+                    'Accept': 'application/vnd.github.v3+json',
+                    'If-None-Match': ''
+                },
+                cache: 'no-store'
             });
             if (!res.ok) return null;
             const json = await res.json();
@@ -3253,6 +3257,11 @@
                 const sd = result.data;
                 if (sd.data && Object.keys(sd.data).length > 0) {
                     setAllLocalData(sd);
+                    // Persist everything to localStorage
+                    saveAll();
+                    localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
+                    localStorage.setItem(ccKey(), JSON.stringify(creditCards));
+                    localStorage.setItem(settingsKey(), JSON.stringify(settings));
                     applyNames();
                     renderAll();
                     setSyncStatus('synced');
@@ -3352,7 +3361,10 @@
             showSyncToast('Uploading...');
             const result = await cloudPush();
             if (result.ok) {
-                showSyncToast('✅ Uploaded to cloud!');
+                const months = Object.keys(data).length;
+                const md = getMonthData();
+                const expCount = md.expenses ? md.expenses.length : 0;
+                showSyncToast('✅ Uploaded ' + months + ' months (' + expCount + ' exp this month)');
             } else if (result.reason === 'busy') {
                 showSyncToast('Sync in progress, try again');
             } else if (result.reason === 'network') {
@@ -3366,7 +3378,14 @@
             document.getElementById('syncMenu').classList.remove('active');
             showSyncToast('Downloading...');
             const ok = await cloudPull();
-            showSyncToast(ok ? '✅ Downloaded from cloud!' : 'Cloud download failed');
+            if (ok) {
+                const months = Object.keys(data).length;
+                const md = getMonthData();
+                const expCount = md.expenses ? md.expenses.length : 0;
+                showSyncToast('✅ Downloaded ' + months + ' months (' + expCount + ' exp this month)');
+            } else {
+                showSyncToast('Cloud download failed');
+            }
         }
 
         async function cloudAutoSync() {
