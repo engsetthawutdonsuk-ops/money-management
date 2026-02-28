@@ -3366,24 +3366,38 @@
             try {
                 const result = await ghRead();
                 if (!result || !result.data) {
-                    // No data on cloud yet, push local
-                    await cloudPush();
+                    // No data on cloud yet — only push if we have real local data
+                    const hasLocal = data && Object.keys(data).length > 0;
+                    if (hasLocal) await cloudPush();
                     setCloudStatus('Cloud connected via GitHub', 'ok');
                     return;
                 }
                 const sd = result.data;
                 const localTime = localStorage.getItem('salaryApp_lastModified') || '1970-01-01';
                 const serverTime = sd.lastModified || '1970-01-01';
-                if (!sd.data || Object.keys(sd.data).length === 0) {
-                    await cloudPush();
-                } else if (new Date(serverTime) > new Date(localTime)) {
+                const hasLocalData = data && Object.keys(data).length > 0;
+                const hasCloudData = sd.data && Object.keys(sd.data).length > 0;
+
+                if (hasCloudData && !hasLocalData) {
+                    // Local is empty, cloud has data → always pull
                     setAllLocalData(sd);
                     applyNames();
                     renderAll();
                     setSyncStatus('synced');
                     showSyncToast('Synced from cloud!');
-                } else {
+                } else if (hasCloudData && new Date(serverTime) > new Date(localTime)) {
+                    // Cloud is newer → pull
+                    setAllLocalData(sd);
+                    applyNames();
+                    renderAll();
+                    setSyncStatus('synced');
+                    showSyncToast('Synced from cloud!');
+                } else if (hasLocalData && new Date(localTime) > new Date(serverTime)) {
+                    // Local is newer → push
                     await cloudPush();
+                    setSyncStatus('synced');
+                } else {
+                    // Same time or both empty → just mark synced, don't overwrite
                     setSyncStatus('synced');
                 }
                 setCloudStatus('Cloud connected via GitHub', 'ok');
