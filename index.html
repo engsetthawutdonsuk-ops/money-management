@@ -758,8 +758,16 @@
         .fixed-card.needs-amount { border-left-color: var(--warning); border-left-style: dashed; background: #fffdf5; }
         .fixed-cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            /* Max 3 cards per row on wide screens. Uses fixed breakpoints for
+               predictable wrapping so credit-card grid matches fixed-expense layout. */
+            grid-template-columns: repeat(3, minmax(300px, 1fr));
             gap: 12px;
+        }
+        @media (max-width: 1100px) {
+            .fixed-cards-grid { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+        }
+        @media (max-width: 700px) {
+            .fixed-cards-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
         }
         .fixed-summary-bar {
             display: flex; gap: 16px; align-items: center;
