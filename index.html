@@ -1559,8 +1559,8 @@
                     <canvas id="categoryChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Who Pays More?</h3>
-                    <canvas id="personChart"></canvas>
+                    <h3>Top Expense Categories</h3>
+                    <canvas id="topCatChart"></canvas>
                 </div>
             </div>
         </div>
@@ -2900,7 +2900,7 @@
         }
 
         // ========== CHARTS ==========
-        let categoryChart, personChart, breakdownChart, incomeVsExpChart, personPieChart;
+        let categoryChart, topCatChart, breakdownChart, incomeVsExpChart, personPieChart;
 
         function renderCharts() {
             const md = getMonthData();
@@ -2936,22 +2936,21 @@
                 }
             });
 
-            // --- Person Bar ---
-            if (personChart) personChart.destroy();
-            personChart = new Chart(document.getElementById('personChart'), {
+            // --- Top Categories (new) ---
+            // Build arrays of category labels/values sorted by amount and take top 3
+            const catPairs = catLabels.map((l, idx) => ({ label: l, value: catValues[idx], color: COLORS[idx % COLORS.length] }));
+            catPairs.sort((a,b) => b.value - a.value);
+            const topCats = catPairs.slice(0, 3);
+            if (topCatChart) topCatChart.destroy();
+            topCatChart = new Chart(document.getElementById('topCatChart'), {
                 type: 'bar',
                 data: {
-                    labels: [settings.person1, settings.person2, 'Shared'],
-                    datasets: [{
-                        label: 'Paid',
-                        data: [p1Total, p2Total, sharedTotal],
-                        backgroundColor: ['rgba(99,102,241,0.75)', 'rgba(236,72,153,0.75)', 'rgba(34,197,94,0.75)'],
-                        borderRadius: 8
-                    }]
+                    labels: topCats.map(c => c.label),
+                    datasets: [{ data: topCats.map(c => c.value), backgroundColor: topCats.map(c => c.color), borderRadius: 8 }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '฿' + ctx.raw.toLocaleString() } } },
                     scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
                 }
             });
