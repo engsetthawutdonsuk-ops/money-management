@@ -1,5 +1,5 @@
 // Service Worker for Money Management PWA
-const CACHE_NAME = 'money-mgmt-v1';
+const CACHE_NAME = 'money-mgmt-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -59,6 +59,9 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request));
     return;
   }
+
+  // NEVER intercept jsonblob.com or other external API calls
+  if (url.hostname.includes('jsonblob')) return;
 
   // CDN resources — Cache First (they never change)
   if (url.origin !== self.location.origin) {

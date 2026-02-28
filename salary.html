@@ -3221,7 +3221,8 @@
                 }
                 showSyncToast('Failed to create cloud - try again');
             } catch (e) {
-                showSyncToast('No internet - cannot create cloud');
+                showSyncToast('No internet - ' + (e.message || e));
+                console.error('createNewCloud error:', e);
             }
         }
 
