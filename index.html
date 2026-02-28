@@ -4046,12 +4046,24 @@
             const bill = getCardBill(card, key);
             const monthLabel = new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             document.getElementById('ccBillCardIdx').value = cardIdx;
-            document.getElementById('ccBillAmt').value = bill.amount || '';
             const defaultEstimate = card.defaultAmount && card.defaultAmount > 0 ? fmt(card.defaultAmount) : 'Not set yet';
+            // Show default estimate as the input placeholder so it uses the same grey placeholder styling
+            const inp = document.getElementById('ccBillAmt');
+            if (bill.amount > 0) {
+                inp.value = bill.amount;
+                inp.placeholder = '';
+            } else {
+                inp.value = '';
+                inp.placeholder = `Default: ${defaultEstimate}`;
+            }
+            // Make the input visually prominent (match screenshots)
+            inp.style.fontSize = '1.6rem';
+            inp.style.fontWeight = '700';
+            inp.style.textAlign = 'center';
+
             document.getElementById('ccBillInfo').innerHTML = `
                 <div class="au-desc">💳 ${card.name}</div>
                 <div class="au-default" style="font-size:0.8rem; color:var(--text-light); margin-top:4px;">📅 ${monthLabel}</div>
-                <div class="au-default" style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Default estimate: ${defaultEstimate}</div>
                 ${bill.amount > 0 ? `<div style="font-size:0.75rem; color:var(--primary); margin-top:6px;">Current: ${fmt(bill.amount)}</div>` : ''}
             `;
             document.getElementById('ccBillModalTitle').textContent = bill.amount > 0 ? '✏️ Update Bill Amount' : '💰 Set Bill Amount';
