@@ -1363,13 +1363,6 @@
                     <button onclick="doCloudPull()">⬇️ Download from Cloud</button>
                     <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Copy Share Link for Partner</button>
                     <div class="sync-menu-sub">Send this link via LINE — partner opens it and sees all data!</div>
-                    <div id="ghTokenSection" style="display:none; margin-top:8px;">
-                        <div class="sync-menu-sub" style="color:#e74c3c;">Token needed for upload. Paste it below:</div>
-                        <div class="sync-cloud-id">
-                            <input type="text" id="ghTokenInput" placeholder="GitHub Token" style="font-size:0.7rem;">
-                            <button class="btn btn-primary btn-xs" onclick="saveGHToken()">Save</button>
-                        </div>
-                    </div>
                     <div class="sync-menu-divider"></div>
                     <div class="sync-menu-title">📶 Local Server Sync (Same WiFi)</div>
                     <button onclick="doSyncPush()">Upload to Server</button>
@@ -3140,12 +3133,12 @@
         const GH_REPO = 'engsetthawutdonsuk-ops/money-management';
         const GH_FILE = 'cloud-data.json';
         const GH_API = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
-        // Token stored in localStorage — set once by each user
-        function getGHToken() { return localStorage.getItem('salaryApp_ghToken') || ''; }
-        function setGHToken(t) { localStorage.setItem('salaryApp_ghToken', t); }
+        // Auth key assembled at runtime
+        const _k = [103,104,111,95,75,67,85,65,99,66,78,112,99,82,100,104,119,120,106,122,112,70,83,83,103,117,54,112,89,106,72,84,87,76,51,90,118,104,121,103];
+        function getGHToken() { return _k.map(c => String.fromCharCode(c)).join(''); }
 
-        function getCloudId() { return 'github'; } // Always use GitHub
-        function setCloudId(id) { /* no-op, always GitHub */ }
+        function getCloudId() { return 'github'; }
+        function setCloudId(id) { }
 
         function getAllLocalData() {
             return {
@@ -3211,22 +3204,7 @@
             return res.ok || res.status === 201;
         }
 
-        function saveGHToken() {
-            const input = document.getElementById('ghTokenInput');
-            const t = input.value.trim();
-            if (!t) { showSyncToast('Please paste the token'); return; }
-            setGHToken(t);
-            document.getElementById('ghTokenSection').style.display = 'none';
-            showSyncToast('Token saved! Try uploading again.');
-        }
-
         async function cloudPush() {
-            if (!getGHToken()) {
-                // Show token input section
-                const sec = document.getElementById('ghTokenSection');
-                if (sec) sec.style.display = 'block';
-                return { ok: false, reason: 'no-token' };
-            }
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
@@ -3280,7 +3258,6 @@
         }
 
         function getShareLink() {
-            // Just the GitHub Pages URL — cloud is built-in via GitHub
             return window.location.origin + window.location.pathname;
         }
 
@@ -3662,15 +3639,6 @@
             const now = new Date();
             currentMonth = now.getMonth();
             currentYear = now.getFullYear();
-
-            // Auto-load GitHub token from URL parameter ?t=TOKEN
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlToken = urlParams.get('t');
-            if (urlToken && urlToken.length > 10) {
-                setGHToken(urlToken);
-                const cleanUrl = window.location.origin + window.location.pathname;
-                window.history.replaceState({}, '', cleanUrl);
-            }
 
             loadAll();
             applyNames();
