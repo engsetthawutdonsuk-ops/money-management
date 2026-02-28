@@ -2494,6 +2494,7 @@
                 const ownerLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared';
                 const paidClassTag = e.paidBy === 'person1' ? 'p1' : e.paidBy === 'person2' ? 'p2' : 'shared';
                 return `<div class="fixed-card ${isPaid ? 'is-paid' : ''} ${needsAmt ? 'needs-amount' : ''}">
+                    <div class="ec-check ${isPaid ? 'checked' : ''}" onclick="togglePaid(${origIdx})">${isPaid ? '✓' : ''}</div>
                     <div class="fc-info">
                         <h4>💳 ${e.desc}</h4>
                         <div class="fc-meta">
@@ -2503,7 +2504,6 @@
                     </div>
                     <div class="fc-amount">${amtHtml}${amtSub}</div>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn-icon" onclick="togglePaid(${origIdx})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
                         ${ccAmtBtn}
                         <button class="btn-icon" onclick="openCardModal(${cardIdx})" title="Edit card">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${cardIdx})" title="Delete card">🗑️</button>
