@@ -3136,18 +3136,17 @@
         const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
         const CORS_PROXIES = [
             '', // Direct (no proxy)
-            'https://corsproxy.io/?url=',
             'https://api.allorigins.win/raw?url='
         ];
 
-        // Smart fetch — tries direct first, then CORS proxies for GET only
+        // Smart fetch — tries direct first, then CORS proxies as fallback
         async function cloudFetch(url, options = {}) {
             const method = (options.method || 'GET').toUpperCase();
-            // For POST/PUT — only direct (proxies strip response headers)
-            if (method !== 'GET') {
+            // For POST — only direct (proxies strip Location header needed for ID)
+            if (method === 'POST') {
                 return await fetch(url, options);
             }
-            // For GET — try direct, then proxies
+            // For GET/PUT/DELETE — try direct, then proxies
             for (let i = 0; i < CORS_PROXIES.length; i++) {
                 try {
                     const proxyUrl = CORS_PROXIES[i] ? CORS_PROXIES[i] + encodeURIComponent(url) : url;
