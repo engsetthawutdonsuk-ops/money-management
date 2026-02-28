@@ -2474,9 +2474,9 @@
             // Amount section
             let amtHtml = '', amtSub = '';
             if (isCCItem && e.amount === 0) {
-                amtHtml = `<div class="tbd-pill">❓ TBD</div><div><span class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</span></div>`;
+                amtHtml = `<div class="tbd-pill">❓ TBD</div><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</button></div>`;
             } else if (isCCItem && e.amount > 0) {
-                amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span>`;
+                amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Update</button></div>`;
             } else if (needsAmt) {
                 amtHtml = `<div class="tbd-pill">❓ TBD</div><div><span class="amount-set-btn" onclick="openAmountUpdate(${origIdx})">💰 Set</span></div>`;
             } else if (e.isFixed && e.amountOverride !== null && e.amountOverride !== undefined) {
@@ -4178,7 +4178,7 @@
                 if (isPaid) cardClass += ' is-paid';
                 if (!hasAmount) cardClass += ' needs-amount';
 
-                const amtHtml = hasAmount ? `<div>${fmt(bill.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">credit bill</div>` : `<div style="color:var(--warning); font-size:0.9rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500; margin-bottom:6px;">set bill</div><div><button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</button></div>`;
+                const amtHtml = hasAmount ? `<div>${fmt(bill.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">credit bill</div><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Update</button></div>` : `<div style="color:var(--warning); font-size:0.9rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500; margin-bottom:6px;">set bill</div><div><button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</button></div>`;
 
                 return `<div class="${cardClass}">
                     <div class="fc-info">
@@ -4187,6 +4187,9 @@
                             <span>${monthLabel}</span>
                             <span class="person-tag ${paidByClass}">${ownerLabel}</span>
                         </div>
+                    </div>
+                    <div class="fc-amount">
+                        ${amtHtml}
                     </div>
                     <div style="display:flex; gap:6px; align-items:center;">
                         <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
