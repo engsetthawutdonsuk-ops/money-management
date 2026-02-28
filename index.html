@@ -1357,17 +1357,19 @@
                     ☁️ Sync <span class="sync-dot" id="syncDot"></span>
                 </button>
                 <div class="sync-menu" id="syncMenu">
-                    <div class="sync-menu-title">🌐 Cloud Sync (Use from Anywhere)</div>
-                    <div class="sync-cloud-id">
-                        <input type="text" id="cloudIdInput" placeholder="Cloud ID" title="Enter your shared Cloud ID">
-                        <button class="btn btn-primary btn-xs" onclick="saveCloudId()">Link</button>
-                    </div>
+                    <div class="sync-menu-title">☁️ Cloud Sync (GitHub)</div>
                     <div class="sync-cloud-status" id="cloudStatus"></div>
-                    <button onclick="doCloudPush()">Upload to Cloud</button>
-                    <button onclick="doCloudPull()">Download from Cloud</button>
-                    <button onclick="createNewCloud()">Create New Cloud ID</button>
+                    <button onclick="doCloudPush()">⬆️ Upload to Cloud</button>
+                    <button onclick="doCloudPull()">⬇️ Download from Cloud</button>
                     <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Copy Share Link for Partner</button>
-                    <div class="sync-menu-sub">Creates a link that auto-connects — just send via LINE!</div>
+                    <div class="sync-menu-sub">Send this link via LINE — partner opens it and sees all data!</div>
+                    <div id="ghTokenSection" style="display:none; margin-top:8px;">
+                        <div class="sync-menu-sub" style="color:#e74c3c;">Token needed for upload. Paste it below:</div>
+                        <div class="sync-cloud-id">
+                            <input type="text" id="ghTokenInput" placeholder="GitHub Token" style="font-size:0.7rem;">
+                            <button class="btn btn-primary btn-xs" onclick="saveGHToken()">Save</button>
+                        </div>
+                    </div>
                     <div class="sync-menu-divider"></div>
                     <div class="sync-menu-title">📶 Local Server Sync (Same WiFi)</div>
                     <button onclick="doSyncPush()">Upload to Server</button>
@@ -3133,35 +3135,17 @@
         // ========== SYNC ==========
         let syncStatus = 'unknown';
         const SYNC_API = '/api/data';
-        const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
-        const CORS_PROXIES = [
-            '', // Direct (no proxy)
-            'https://api.allorigins.win/raw?url='
-        ];
 
-        // Smart fetch — tries direct first, then CORS proxies as fallback
-        async function cloudFetch(url, options = {}) {
-            const method = (options.method || 'GET').toUpperCase();
-            // For POST — only direct (proxies strip Location header needed for ID)
-            if (method === 'POST') {
-                return await fetch(url, options);
-            }
-            // For GET/PUT/DELETE — try direct, then proxies
-            for (let i = 0; i < CORS_PROXIES.length; i++) {
-                try {
-                    const proxyUrl = CORS_PROXIES[i] ? CORS_PROXIES[i] + encodeURIComponent(url) : url;
-                    const res = await fetch(proxyUrl, options);
-                    if (res.ok || res.status === 201) return res;
-                } catch (e) {
-                    console.warn('Cloud fetch attempt', i + 1, 'failed:', e.message);
-                    if (i === CORS_PROXIES.length - 1) throw e;
-                }
-            }
-            throw new Error('All cloud endpoints failed');
-        }
+        // ===== GITHUB-BASED CLOUD SYNC (uses api.github.com — works everywhere) =====
+        const GH_REPO = 'engsetthawutdonsuk-ops/money-management';
+        const GH_FILE = 'cloud-data.json';
+        const GH_API = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
+        // Token stored in localStorage — set once by each user
+        function getGHToken() { return localStorage.getItem('salaryApp_ghToken') || ''; }
+        function setGHToken(t) { localStorage.setItem('salaryApp_ghToken', t); }
 
-        function getCloudId() { return localStorage.getItem('salaryApp_cloudId') || ''; }
-        function setCloudId(id) { localStorage.setItem('salaryApp_cloudId', id); }
+        function getCloudId() { return 'github'; } // Always use GitHub
+        function setCloudId(id) { /* no-op, always GitHub */ }
 
         function getAllLocalData() {
             return {
@@ -3185,39 +3169,92 @@
             if (sd.lastModified) localStorage.setItem('salaryApp_lastModified', sd.lastModified);
         }
 
-        // ===== CLOUD SYNC (jsonblob.com — works from anywhere) =====
+        // Get current file SHA (needed for GitHub update)
+        async function getGitHubFileSha() {
+            try {
+                const res = await fetch(GH_API, {
+                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    return json.sha;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        // Read data from GitHub
+        async function ghRead() {
+            const res = await fetch(GH_API, {
+                headers: { 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (!res.ok) return null;
+            const json = await res.json();
+            const decoded = atob(json.content.replace(/\n/g, ''));
+            return { data: JSON.parse(decoded), sha: json.sha };
+        }
+
+        // Write data to GitHub
+        async function ghWrite(payload, sha) {
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+            const body = { message: 'sync ' + new Date().toISOString(), content: content };
+            if (sha) body.sha = sha;
+            const res = await fetch(GH_API, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'token ' + getGHToken(),
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            return res.ok || res.status === 201;
+        }
+
+        function saveGHToken() {
+            const input = document.getElementById('ghTokenInput');
+            const t = input.value.trim();
+            if (!t) { showSyncToast('Please paste the token'); return; }
+            setGHToken(t);
+            document.getElementById('ghTokenSection').style.display = 'none';
+            showSyncToast('Token saved! Try uploading again.');
+        }
+
         async function cloudPush() {
-            const cloudId = getCloudId();
-            if (!cloudId) return { ok: false, reason: 'no-id' };
+            if (!getGHToken()) {
+                // Show token input section
+                const sec = document.getElementById('ghTokenSection');
+                if (sec) sec.style.display = 'block';
+                return { ok: false, reason: 'no-token' };
+            }
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
-                const res = await cloudFetch(CLOUD_API + '/' + cloudId, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) { setSyncStatus('synced'); return { ok: true }; }
-                return { ok: false, reason: 'http-' + res.status };
-            } catch (e) { setSyncStatus('offline'); return { ok: false, reason: 'network' }; }
+                const sha = await getGitHubFileSha();
+                const ok = await ghWrite(payload, sha);
+                if (ok) { setSyncStatus('synced'); return { ok: true }; }
+                return { ok: false, reason: 'write-failed' };
+            } catch (e) {
+                console.error('cloudPush error:', e);
+                setSyncStatus('offline');
+                return { ok: false, reason: 'network' };
+            }
         }
 
         async function cloudPull() {
-            const cloudId = getCloudId();
-            if (!cloudId) return false;
             try {
-                const res = await cloudFetch(CLOUD_API + '/' + cloudId);
-                if (res.ok) {
-                    const sd = await res.json();
-                    if (sd && sd.data && Object.keys(sd.data).length > 0) {
-                        setAllLocalData(sd);
-                        applyNames();
-                        renderAll();
-                        setSyncStatus('synced');
-                        return true;
-                    }
+                const result = await ghRead();
+                if (result && result.data && result.data.data && Object.keys(result.data.data).length > 0) {
+                    setAllLocalData(result.data);
+                    applyNames();
+                    renderAll();
+                    setSyncStatus('synced');
+                    return true;
                 }
-            } catch (e) { setSyncStatus('offline'); }
+            } catch (e) {
+                console.error('cloudPull error:', e);
+                setSyncStatus('offline');
+            }
             return false;
         }
 
@@ -3226,61 +3263,29 @@
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
-                const res = await fetch(CLOUD_API, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                console.log('createNewCloud status:', res.status);
-                console.log('createNewCloud headers:');
-                res.headers.forEach((v, k) => console.log('  ', k, ':', v));
-                if (res.ok || res.status === 201) {
-                    // Try multiple ways to extract the blob ID
-                    let newId = '';
-                    // Method 1: Location header
-                    const loc = res.headers.get('Location') || '';
-                    if (loc) newId = loc.split('/').pop();
-                    // Method 2: X-jsonblob-id header
-                    if (!newId || newId.length < 10) {
-                        newId = res.headers.get('X-jsonblob-id') || '';
-                    }
-                    // Method 3: response URL
-                    if (!newId || newId.length < 10) {
-                        const respUrl = res.url || '';
-                        if (respUrl.includes('/jsonBlob/')) {
-                            newId = respUrl.split('/jsonBlob/').pop();
-                        }
-                    }
-                    console.log('Extracted cloud ID:', newId);
-                    if (newId && newId.length > 10) {
-                        setCloudId(newId);
-                        document.getElementById('cloudIdInput').value = newId;
-                        setSyncStatus('synced');
-                        setCloudStatus('Cloud linked!', 'ok');
-                        showShareLink(newId);
-                        return;
-                    }
-                    showSyncToast('Cloud created but ID not found in response. Check console.');
+                const sha = await getGitHubFileSha();
+                const ok = await ghWrite(payload, sha);
+                if (ok) {
+                    setSyncStatus('synced');
+                    setCloudStatus('Cloud connected via GitHub!', 'ok');
+                    showSyncToast('Data saved to GitHub cloud!');
+                    showShareLink('github');
                 } else {
-                    showSyncToast('Cloud returned error ' + res.status);
+                    showSyncToast('Failed to save to GitHub');
                 }
             } catch (e) {
-                showSyncToast('No internet - ' + (e.message || e));
+                showSyncToast('Error: ' + (e.message || e));
                 console.error('createNewCloud error:', e);
             }
         }
 
         function getShareLink() {
-            const cloudId = getCloudId();
-            if (!cloudId) return null;
-            // Use GitHub Pages URL as base
-            const base = window.location.origin + window.location.pathname;
-            return base + '?cloud=' + cloudId;
+            // Just the GitHub Pages URL — cloud is built-in via GitHub
+            return window.location.origin + window.location.pathname;
         }
 
         function showShareLink(cloudId) {
             const link = getShareLink();
-            if (!link) { showSyncToast('Create a Cloud ID first'); return; }
             const overlay = document.getElementById('shareOverlay');
             const box = document.getElementById('shareBox');
             box.innerHTML = `
@@ -3303,14 +3308,9 @@
 
         function copyShareLink() {
             document.getElementById('syncMenu').classList.remove('active');
-            const cloudId = getCloudId();
-            if (!cloudId) {
-                showSyncToast('Create a Cloud ID first using the button above');
-                return;
-            }
-            // Push latest data first
+            // Upload latest data first, then show share link
             cloudPush().then(() => {
-                showShareLink(cloudId);
+                showShareLink('github');
             });
         }
 
@@ -3332,75 +3332,57 @@
         }
 
         function saveCloudId() {
-            const input = document.getElementById('cloudIdInput');
-            const id = input.value.trim();
-            if (!id) {
-                showSyncToast('Please enter a Cloud ID');
-                return;
-            }
-            setCloudId(id);
-            setCloudStatus('Cloud ID saved! Syncing...', 'ok');
-            showSyncToast('Cloud ID linked!');
-            // Auto-pull after linking
-            cloudAutoSync();
+            // No longer needed — GitHub is always the cloud
+            setCloudStatus('Cloud is always connected via GitHub!', 'ok');
+            showSyncToast('Cloud is built-in — just use Upload/Download!');
         }
 
         async function doCloudPush() {
             document.getElementById('syncMenu').classList.remove('active');
-            if (!getCloudId()) { showSyncToast('Create or enter a Cloud ID first'); return; }
             const result = await cloudPush();
             if (result.ok) {
                 showSyncToast('Uploaded to cloud!');
-            } else if (result.reason === 'http-404') {
-                // Cloud ID expired or deleted — auto-create new one
-                showSyncToast('Cloud ID expired. Creating new one...');
-                await createNewCloud();
             } else if (result.reason === 'network') {
                 showSyncToast('No internet connection');
             } else {
-                showSyncToast('Upload failed (error ' + result.reason + '). Try Create New Cloud ID.');
+                showSyncToast('Upload failed (' + result.reason + ')');
             }
         }
 
         async function doCloudPull() {
             document.getElementById('syncMenu').classList.remove('active');
-            if (!getCloudId()) { showSyncToast('Create or enter a Cloud ID first'); return; }
             const ok = await cloudPull();
             showSyncToast(ok ? 'Downloaded from cloud!' : 'Cloud download failed');
         }
 
         async function cloudAutoSync() {
-            const cloudId = getCloudId();
-            if (!cloudId) { setSyncStatus('local'); return; }
             try {
-                const res = await cloudFetch(CLOUD_API + '/' + cloudId);
-                if (res.ok) {
-                    const sd = await res.json();
-                    const localTime = localStorage.getItem('salaryApp_lastModified') || '1970-01-01';
-                    const serverTime = sd.lastModified || '1970-01-01';
-                    if (!sd.data || Object.keys(sd.data).length === 0) {
-                        const pushResult = await cloudPush();
-                        if (!pushResult.ok) console.warn('cloudAutoSync push failed:', pushResult.reason);
-                    } else if (new Date(serverTime) > new Date(localTime)) {
-                        setAllLocalData(sd);
-                        applyNames();
-                        renderAll();
-                        setSyncStatus('synced');
-                        showSyncToast('Synced from cloud!');
-                    } else {
-                        const pushResult = await cloudPush();
-                        if (pushResult.ok) setSyncStatus('synced');
-                    }
-                    setCloudStatus('Cloud connected', 'ok');
-                } else if (res.status === 404) {
-                    setCloudStatus('Cloud ID not found — creating new one...', 'err');
-                    setSyncStatus('offline');
-                    // Auto-recreate cloud with current data
-                    await createNewCloud();
+                const result = await ghRead();
+                if (!result || !result.data) {
+                    // No data on cloud yet, push local
+                    await cloudPush();
+                    setCloudStatus('Cloud connected via GitHub', 'ok');
+                    return;
                 }
+                const sd = result.data;
+                const localTime = localStorage.getItem('salaryApp_lastModified') || '1970-01-01';
+                const serverTime = sd.lastModified || '1970-01-01';
+                if (!sd.data || Object.keys(sd.data).length === 0) {
+                    await cloudPush();
+                } else if (new Date(serverTime) > new Date(localTime)) {
+                    setAllLocalData(sd);
+                    applyNames();
+                    renderAll();
+                    setSyncStatus('synced');
+                    showSyncToast('Synced from cloud!');
+                } else {
+                    await cloudPush();
+                    setSyncStatus('synced');
+                }
+                setCloudStatus('Cloud connected via GitHub', 'ok');
             } catch (e) {
                 setSyncStatus('offline');
-                setCloudStatus('Cannot reach cloud — offline', 'err');
+                setCloudStatus('Cannot reach GitHub — offline', 'err');
             }
         }
 
@@ -3510,9 +3492,6 @@
         function toggleSyncMenu() {
             const menu = document.getElementById('syncMenu');
             menu.classList.toggle('active');
-            // Load cloud ID into input
-            const cloudInput = document.getElementById('cloudIdInput');
-            if (cloudInput) cloudInput.value = getCloudId();
             updateSyncInfo();
             const close = (e) => {
                 if (!e.target.closest('.sync-wrapper')) {
@@ -3684,21 +3663,13 @@
             currentMonth = now.getMonth();
             currentYear = now.getFullYear();
 
-            // Auto-link Cloud ID from URL parameter ?cloud=XXXXX
+            // Auto-load GitHub token from URL parameter ?t=TOKEN
             const urlParams = new URLSearchParams(window.location.search);
-            const urlCloud = urlParams.get('cloud');
-            if (urlCloud && urlCloud.length > 10) {
-                setCloudId(urlCloud);
-                // Clean URL without reloading
+            const urlToken = urlParams.get('t');
+            if (urlToken && urlToken.length > 10) {
+                setGHToken(urlToken);
                 const cleanUrl = window.location.origin + window.location.pathname;
                 window.history.replaceState({}, '', cleanUrl);
-            }
-
-            // Clean up invalid cloud IDs (must be UUID format, at least 20 chars)
-            const existingCloudId = getCloudId();
-            if (existingCloudId && existingCloudId.length < 20) {
-                localStorage.removeItem('salaryApp_cloudId');
-                console.log('Removed invalid cloud ID:', existingCloudId);
             }
 
             loadAll();
