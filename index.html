@@ -754,6 +754,8 @@
             font-size: 1.15rem; font-weight: 800; color: var(--danger);
             white-space: nowrap;
         }
+        .fixed-card.is-paid { opacity: 0.7; border-left-color: var(--success); }
+        .fixed-card.needs-amount { border-left-color: var(--warning); border-left-style: dashed; background: #fffdf5; }
         .fixed-cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -4102,39 +4104,27 @@
                 const isPaid = !!bill.paid;
                 const hasAmount = bill.amount > 0;
                 const colorDot = CC_COLORS[c.colorIdx || 0];
-
-                let cardClass = 'exp-card';
+                // Use fixed-card layout for credit cards to match fixed-expense pattern
+                let cardClass = 'fixed-card';
                 if (isPaid) cardClass += ' is-paid';
                 if (!hasAmount) cardClass += ' needs-amount';
 
-                // Amount section
-                let amtHtml = '';
-                if (!hasAmount) {
-                    amtHtml = `<span class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</span>`;
-                } else {
-                    amtHtml = `<span class="ec-amount-val">${fmt(bill.amount)}</span>`;
-                }
+                const amtHtml = hasAmount ? `<div>${fmt(bill.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">credit bill</div>` : `<div style="color:var(--warning); font-size:0.9rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">set bill</div>`;
 
                 return `<div class="${cardClass}">
-                    <div class="ec-check ${isPaid ? 'checked' : ''}" onclick="toggleCCPaid(${i})">${isPaid ? '✓' : ''}</div>
-                    <div class="ec-body">
-                        <div class="ec-top">
-                            <span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:${colorDot}; flex-shrink:0;"></span>
-                            <span class="ec-desc">💳 ${c.name}</span>
-                        </div>
-                        <div class="ec-meta">
-                            <span class="ec-date">${monthLabel}</span>
-                            <span class="ec-dot"></span>
+                    <div class="fc-info">
+                        <h4><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:${colorDot}; margin-right:8px; vertical-align:middle;"></span>💳 ${c.name}</h4>
+                        <div class="fc-meta">
+                            <span>${monthLabel}</span>
                             <span class="person-tag ${paidByClass}">${ownerLabel}</span>
                         </div>
                     </div>
-                    <div class="ec-right">
-                        <div class="ec-amount">${amtHtml}</div>
-                        <div class="ec-actions">
-                            ${hasAmount ? `<button class="btn-icon btn-edit-amount" onclick="openCCBillModal(${i})" title="Update amount">💰</button>` : ''}
-                            <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
-                            <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
-                        </div>
+                    <div class="fc-amount">${amtHtml}</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
+                        ${hasAmount ? `<button class="btn-icon" onclick="openCCBillModal(${i})" title="Update amount">💰</button>` : `<button class="btn-icon" onclick="openCCBillModal(${i})" title="Set amount">💰</button>`}
+                        <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
+                        <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
                     </div>
                 </div>`;
             }).join('');
