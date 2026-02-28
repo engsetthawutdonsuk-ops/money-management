@@ -2679,9 +2679,9 @@
             document.getElementById('amountUpdateIndex').value = index;
             document.getElementById('amountUpdateDesc').textContent = e.desc;
             const defAmt = e.defaultAmount || e.amount || 0;
-            document.getElementById('amountUpdateDefault').textContent = defAmt > 0 ? fmt(defAmt) : 'Not set yet';
+            document.getElementById('amountUpdateDefault').textContent = 'Enter bill amount...';
             document.getElementById('amountUpdateInput').value = e.amountOverride !== null && e.amountOverride !== undefined ? e.amountOverride : (e.amount > 0 ? e.amount : '');
-            document.getElementById('amountUpdateInput').placeholder = defAmt > 0 ? `Default: ${defAmt}` : 'Enter bill amount...';
+            document.getElementById('amountUpdateInput').placeholder = 'Enter bill amount...';
 
             document.getElementById('amountUpdateModal').classList.add('active');
             setTimeout(() => document.getElementById('amountUpdateInput').focus(), 100);
@@ -4046,15 +4046,15 @@
             const bill = getCardBill(card, key);
             const monthLabel = new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             document.getElementById('ccBillCardIdx').value = cardIdx;
-            const defaultEstimate = card.defaultAmount && card.defaultAmount > 0 ? fmt(card.defaultAmount) : 'Not set yet';
-            // Show default estimate as the input placeholder so it uses the same grey placeholder styling
+            const defaultEstimate = card.defaultAmount && card.defaultAmount > 0 ? fmt(card.defaultAmount) : '';
+            // Show a consistent placeholder prompting entry instead of showing the default
             const inp = document.getElementById('ccBillAmt');
             if (bill.amount > 0) {
                 inp.value = bill.amount;
                 inp.placeholder = '';
             } else {
                 inp.value = '';
-                inp.placeholder = `Default: ${defaultEstimate}`;
+                inp.placeholder = 'Enter bill amount...';
             }
             // Make the input visually prominent (match screenshots)
             inp.style.fontSize = '1.6rem';
