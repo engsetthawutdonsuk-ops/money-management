@@ -498,9 +498,16 @@
         .exp-section-header.collapsed .sec-toggle { transform: rotate(-90deg); }
         .exp-section-body {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            /* Cap pay-list cards to max 3 columns to match fixed/cc grids */
+            grid-template-columns: repeat(3, minmax(300px, 1fr));
             gap: 10px;
             padding: 14px;
+        }
+        @media (max-width: 1100px) {
+            .exp-section-body { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+        }
+        @media (max-width: 700px) {
+            .exp-section-body { grid-template-columns: repeat(1, minmax(0, 1fr)); }
         }
         .exp-section-header.collapsed + .exp-section-body { display: none; }
 
