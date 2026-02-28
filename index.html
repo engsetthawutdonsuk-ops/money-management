@@ -14,6 +14,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Firebase (Realtime Database compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -1932,6 +1935,97 @@
         let creditCards = []; // credit card objects
         let currentCCFilter = 'all';
 
+        // ===== Firebase Realtime DB integration =====
+        // Replace the firebaseConfig values with your project's config from Firebase Console
+        // NOTE: keep these values public — they are safe to embed for client-side access,
+        // but make sure your Realtime Database rules allow secure access (during testing you can use test mode).
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYF1wZnPuy8CINM8A3JLzRXfOFPzoaI9o",
+            authDomain: "my-money-app-9954d.firebaseapp.com",
+            databaseURL: "https://my-money-app-9954d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "my-money-app-9954d",
+            storageBucket: "my-money-app-9954d.appspot.com",
+            messagingSenderId: "1036616583831",
+            appId: "1:1036616583831:web:7f397748df5ac60e7837d2",
+            measurementId: "G-SSGN58KXE5"
+        };
+
+        // Initialize Firebase (compat)
+        // Expose `firebaseDb` globally so other functions can use transactions
+        let firebaseDb = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            firebaseDb = firebase.database();
+
+            // Load from Firebase (realtime listener) — merge cloud data into local without clobbering local edits
+            function loadFromFirebaseRealtime() {
+                try {
+                    db.ref('shared_money_data').on('value', (snapshot) => {
+                        const cloudData = snapshot.val();
+                        if (cloudData) {
+                            // Merge month-level data: only add months that don't exist locally to avoid overwriting local edits
+                            if (cloudData.data) {
+                                Object.keys(cloudData.data).forEach(m => {
+                                    if (!data[m]) data[m] = cloudData.data[m];
+                                });
+                            }
+                            // Merge settings: keep local values but fill missing fields from cloud
+                            if (cloudData.settings) {
+                                settings = Object.assign({}, cloudData.settings, settings);
+                            }
+                            // If local fixed/cc lists are empty, adopt cloud versions
+                            if ((!fixedExpenses || fixedExpenses.length === 0) && cloudData.fixedExpenses) {
+                                fixedExpenses = cloudData.fixedExpenses;
+                            }
+                            if ((!creditCards || creditCards.length === 0) && cloudData.creditCards) {
+                                creditCards = cloudData.creditCards;
+                            }
+                            // Persist merged data locally without updating lastModified
+                            saveDataQuiet();
+                            if (cloudData.lastModified) {
+                                // cloudData.lastModified may be server timestamp (number) or ISO string
+                                try {
+                                    const lm = typeof cloudData.lastModified === 'number' ? new Date(cloudData.lastModified).toISOString() : cloudData.lastModified;
+                                    localStorage.setItem('salaryApp_lastModified', lm);
+                                    setCloudStatus('Firebase: connected — last: ' + lm, 'ok');
+                                } catch (e) { setCloudStatus('Firebase: connected', 'ok'); }
+                            } else {
+                                setCloudStatus('Firebase: connected', 'ok');
+                            }
+                            renderAll();
+                            console.log('📥 Merged data from Firebase realtime');
+                        }
+                    });
+                } catch (e) { console.warn('Firebase load error', e); }
+            }
+
+            // Save to Firebase using per-month updates to avoid clobbering other clients
+            function saveToFirebase() {
+                try {
+                    const key = currentKey();
+                    const monthData = data[key] || {};
+                    const payload = {};
+                    // write only the current month under /data/<YYYY-MM>
+                    payload['data/' + key] = monthData;
+                    // also update settings and lists so they stay in sync
+                    payload['settings'] = settings;
+                    if (fixedExpenses && fixedExpenses.length > 0) payload['fixedExpenses'] = fixedExpenses;
+                    if (creditCards && creditCards.length > 0) payload['creditCards'] = creditCards;
+                    // server timestamp for lastModified
+                    payload['lastModified'] = firebase.database.ServerValue.TIMESTAMP;
+
+                    return firebaseDb.ref('shared_money_data').update(payload)
+                        .then(() => { console.log('☁️ Updated Firebase (month:', key, ')'); })
+                        .catch(err => { console.error('Firebase update failed', err); });
+                } catch (e) { console.error('Firebase save exception', e); }
+            }
+
+            // Start realtime listener
+            loadFromFirebaseRealtime();
+        } catch (e) {
+            console.warn('Firebase init skipped (missing config?)', e);
+        }
+
         const CC_COLORS = [
             'linear-gradient(135deg,#1e293b,#334155)',
             'linear-gradient(135deg,#6366f1,#8b5cf6)',
@@ -2061,6 +2155,10 @@
         function saveAll() {
             localStorage.setItem(storageKey(), JSON.stringify(data));
             updateLastModified();
+            // Also save to Firebase realtime DB (if initialized)
+            try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
+            // Schedule a debounced GitHub cloud upload so quick successive edits don't conflict
+            try { if (typeof cloudPush === 'function') scheduleAutoUpload(); } catch (e) {}
         }
 
         // Save data to localStorage WITHOUT updating lastModified
@@ -2477,6 +2575,49 @@
             const md = getMonthData();
             const e = md.expenses[index];
             if (!e) return;
+            // If Firebase is available, use a transaction to toggle paid atomically on the cloud
+            if (typeof firebaseDb !== 'undefined' && firebaseDb) {
+                const key = currentKey();
+                const ref = firebaseDb.ref('shared_money_data/data/' + key + '/expenses');
+                // Optimistically toggle locally for snappy UI
+                e.paid = !e.paid;
+                renderExpenseTable(document.getElementById('searchInput').value);
+                renderSummary();
+                // Run transaction on expenses array
+                ref.transaction((expenses) => {
+                    if (!expenses || !expenses[index]) return expenses;
+                    expenses[index].paid = !expenses[index].paid;
+                    return expenses;
+                }, (err, committed, snapshot) => {
+                    if (err) {
+                        console.error('Firebase transaction failed', err);
+                        // revert local change on error
+                        e.paid = !e.paid;
+                        saveDataQuiet();
+                        renderExpenseTable(document.getElementById('searchInput').value);
+                        renderSummary();
+                        showToast('Failed to update cloud', 'error');
+                    } else if (!committed) {
+                        console.log('Firebase transaction aborted');
+                    } else {
+                        // Commit local state from snapshot
+                        const updated = snapshot.val();
+                        if (updated) {
+                            const mdLocal = getMonthData();
+                            mdLocal.expenses = updated;
+                            saveDataQuiet();
+                            renderExpenseTable(document.getElementById('searchInput').value);
+                            renderSummary();
+                            showToast(e.paid ? `"${e.desc}" marked as paid ✅` : `"${e.desc}" marked as unpaid`, e.paid ? 'success' : '');
+                        }
+                    }
+                });
+                // Also sync CC if needed (local change already applied)
+                if (e.isCreditCard) { syncCCFromExpense(e); renderCreditCards(); }
+                return;
+            }
+
+            // Fallback: no Firebase — toggle locally and save
             e.paid = !e.paid;
             saveAll();
             // If it's a CC item, sync back to credit card data
@@ -3135,6 +3276,20 @@
         let syncStatus = 'unknown';
         const SYNC_API = '/api/data';
 
+        // Auto-upload (debounced) to GitHub cloud
+        let autoUploadTimer = null;
+        const AUTO_UPLOAD_DELAY = 2000; // ms
+        function scheduleAutoUpload() {
+            try {
+                clearTimeout(autoUploadTimer);
+                autoUploadTimer = setTimeout(async () => {
+                    // push local changes to GitHub (non-blocking)
+                    const res = await cloudPush();
+                    if (res && res.ok) showSyncToast('Auto-uploaded to cloud');
+                }, AUTO_UPLOAD_DELAY);
+            } catch (e) { console.warn('scheduleAutoUpload error', e); }
+        }
+
         // ===== GITHUB-BASED CLOUD SYNC (uses api.github.com — works everywhere) =====
         const GH_REPO = 'engsetthawutdonsuk-ops/money-management';
         const GH_FILE = 'cloud-data.json';
@@ -3444,6 +3599,20 @@
             if (el) { el.textContent = msg; el.className = 'sync-cloud-status ' + (type || ''); }
         }
 
+        // Firebase connection indicator (shows in sync UI)
+        function updateFirebaseStatus(connected, lastTs) {
+            const el = document.getElementById('cloudStatus');
+            if (!el) return;
+            if (connected) {
+                const t = lastTs ? (typeof lastTs === 'number' ? new Date(lastTs).toISOString() : lastTs) : new Date().toISOString();
+                el.textContent = 'Firebase: connected — last: ' + t;
+                el.className = 'sync-cloud-status ok';
+            } else {
+                el.textContent = 'Firebase: offline';
+                el.className = 'sync-cloud-status err';
+            }
+        }
+
         // ===== LOCAL SERVER SYNC (Same WiFi) =====
         async function syncPush() {
             try {
@@ -3722,8 +3891,11 @@
             renderAll();
             setupEvents();
 
-            // Auto-sync after initial render
-            setTimeout(() => autoSync(), 500);
+            // Auto-sync after initial render and perform an explicit cloud pull shortly after
+            setTimeout(() => {
+                autoSync();
+                setTimeout(() => { try { if (typeof cloudPull === 'function') cloudPull(); } catch (e) {} }, 300);
+            }, 500);
         }
 
         init();
