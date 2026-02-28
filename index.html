@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>💑 Money Management - Monthly Tracker</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
@@ -3193,37 +3190,29 @@
         // Write data to GitHub (auto-retries on SHA conflict)
         async function ghWrite(payload, sha) {
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-            const body = { message: 'sync ' + new Date().toISOString(), content: content };
-            if (sha) body.sha = sha;
-            const res = await fetch(GH_API, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'token ' + getGHToken(),
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
-            });
-            if (res.ok || res.status === 201) return true;
-            // SHA conflict (409) or validation error (422) — retry with fresh SHA
-            if (res.status === 409 || res.status === 422) {
-                console.log('SHA conflict, retrying with fresh SHA...');
-                const freshSha = await getGitHubFileSha();
-                const body2 = { message: 'sync retry ' + new Date().toISOString(), content: content };
-                if (freshSha) body2.sha = freshSha;
-                const res2 = await fetch(GH_API, {
+            async function doPut(s) {
+                const body = { message: 'sync ' + new Date().toISOString(), content: content };
+                if (s) body.sha = s;
+                return await fetch(GH_API, {
                     method: 'PUT',
                     headers: {
                         'Authorization': 'token ' + getGHToken(),
                         'Accept': 'application/vnd.github.v3+json',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(body2)
+                    body: JSON.stringify(body)
                 });
-                if (res2.ok || res2.status === 201) return true;
-                console.error('Retry also failed:', res2.status);
             }
-            console.error('ghWrite failed:', res.status);
+            let res = await doPut(sha);
+            if (res.ok || res.status === 201) return true;
+            // SHA conflict — retry with fresh SHA
+            if (res.status === 409 || res.status === 422) {
+                console.log('SHA conflict (' + res.status + '), retrying...');
+                const freshSha = await getGitHubFileSha();
+                res = await doPut(freshSha);
+                if (res.ok || res.status === 201) return true;
+            }
+            console.error('ghWrite failed:', res.status, await res.text().catch(() => ''));
             return false;
         }
 
@@ -3255,7 +3244,6 @@
                 const result = await ghRead();
                 if (!result || !result.data) return false;
                 const sd = result.data;
-                // If cloud has valid app data, load it
                 if (sd.data && Object.keys(sd.data).length > 0) {
                     setAllLocalData(sd);
                     applyNames();
@@ -3263,7 +3251,7 @@
                     setSyncStatus('synced');
                     return true;
                 }
-                // Cloud exists but has no app data yet — not an error, just empty
+                // Cloud exists but empty — not an error
                 return true;
             } catch (e) {
                 console.error('cloudPull error:', e);
@@ -3357,7 +3345,7 @@
             showSyncToast('Uploading...');
             const result = await cloudPush();
             if (result.ok) {
-                showSyncToast('\u2705 Uploaded to cloud!');
+                showSyncToast('✅ Uploaded to cloud!');
             } else if (result.reason === 'busy') {
                 showSyncToast('Sync in progress, try again');
             } else if (result.reason === 'network') {
@@ -3371,7 +3359,7 @@
             document.getElementById('syncMenu').classList.remove('active');
             showSyncToast('Downloading...');
             const ok = await cloudPull();
-            showSyncToast(ok ? '\u2705 Downloaded from cloud!' : 'Cloud download failed');
+            showSyncToast(ok ? '✅ Downloaded from cloud!' : 'Cloud download failed');
         }
 
         async function cloudAutoSync() {
