@@ -2491,7 +2491,7 @@
             }
 
             const amtBtn = e.isFixed && !needsAmt ? `<button class="btn-icon btn-edit-amount" onclick="openAmountUpdate(${origIdx})" title="Update amount">💰</button>` : '';
-            const ccAmtBtn = isCCItem && e.amount >= 0 ? `<button class="btn-icon btn-edit-amount" onclick="openCCBillFromList(${origIdx})" title="${e.amount>0?'Update amount':'Set amount'}">💰</button>` : '';
+            const ccAmtBtn = isCCItem ? `<button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">${e.amount>0? '💰 Update' : '💰 Set'}</button>` : '';
             const editBtn = isCCItem ? '' : `<button class="btn-icon" onclick="editExpense(${origIdx})" title="Edit">✏️</button>`;
             const delBtn = isCCItem ? '' : `<button class="btn-icon" onclick="deleteExpense(${origIdx})" title="Delete">🗑️</button>`;
 
@@ -4185,9 +4185,9 @@
                             <span class="person-tag ${paidByClass}">${ownerLabel}</span>
                         </div>
                     </div>
-                    <div style="display:flex; gap:6px;">
+                    <div style="display:flex; gap:6px; align-items:center;">
                         <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
-                        <button class="btn-icon" onclick="openCCBillModal(${i})" title="${hasAmount ? 'Update amount' : 'Set amount'}">💰</button>
+                        ${hasAmount ? `<button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Update</button>` : `<button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</button>`}
                         <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
                     </div>
