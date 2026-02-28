@@ -2483,9 +2483,33 @@
             }
 
             const amtBtn = e.isFixed && !needsAmt ? `<button class="btn-icon btn-edit-amount" onclick="openAmountUpdate(${origIdx})" title="Update amount">💰</button>` : '';
-            const ccAmtBtn = isCCItem && e.amount > 0 ? `<button class="btn-icon btn-edit-amount" onclick="openCCBillFromList(${origIdx})" title="Update amount">💰</button>` : '';
+            const ccAmtBtn = isCCItem && e.amount >= 0 ? `<button class="btn-icon btn-edit-amount" onclick="openCCBillFromList(${origIdx})" title="${e.amount>0?'Update amount':'Set amount'}">💰</button>` : '';
             const editBtn = isCCItem ? '' : `<button class="btn-icon" onclick="editExpense(${origIdx})" title="Edit">✏️</button>`;
             const delBtn = isCCItem ? '' : `<button class="btn-icon" onclick="deleteExpense(${origIdx})" title="Delete">🗑️</button>`;
+
+            // If this is a credit-card item in the pay list, render using the
+            // same fixed-card layout to match Fixed Expenses UI.
+            if (isCCItem) {
+                const cardIdx = e.ccCardIdx;
+                const ownerLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared';
+                const paidClassTag = e.paidBy === 'person1' ? 'p1' : e.paidBy === 'person2' ? 'p2' : 'shared';
+                return `<div class="fixed-card ${isPaid ? 'is-paid' : ''} ${needsAmt ? 'needs-amount' : ''}">
+                    <div class="fc-info">
+                        <h4>💳 ${e.desc}</h4>
+                        <div class="fc-meta">
+                            <span class="ec-date">${formatDate(e.date)}</span>
+                            <span class="person-tag ${paidClassTag}">${ownerLabel}</span>
+                        </div>
+                    </div>
+                    <div class="fc-amount">${amtHtml}${amtSub}</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-icon" onclick="togglePaid(${origIdx})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
+                        ${ccAmtBtn}
+                        <button class="btn-icon" onclick="openCardModal(${cardIdx})" title="Edit card">✏️</button>
+                        <button class="btn-icon" onclick="deleteCard(${cardIdx})" title="Delete card">🗑️</button>
+                    </div>
+                </div>`;
+            }
 
             return `<div class="${cardClass}">
                 <div class="ec-check ${isPaid ? 'checked' : ''}" onclick="togglePaid(${origIdx})">${isPaid ? '✓' : ''}</div>
