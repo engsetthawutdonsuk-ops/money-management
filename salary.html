@@ -3134,6 +3134,26 @@
         let syncStatus = 'unknown';
         const SYNC_API = '/api/data';
         const CLOUD_API = 'https://jsonblob.com/api/jsonBlob';
+        const CORS_PROXIES = [
+            '', // Direct (no proxy)
+            'https://corsproxy.io/?url=',
+            'https://api.allorigins.win/raw?url='
+        ];
+
+        // Smart fetch — tries direct first, then CORS proxies as fallback
+        async function cloudFetch(url, options = {}) {
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                try {
+                    const proxyUrl = CORS_PROXIES[i] ? CORS_PROXIES[i] + encodeURIComponent(url) : url;
+                    const res = await fetch(proxyUrl, options);
+                    if (res.ok || res.status === 201) return res;
+                } catch (e) {
+                    console.warn('Cloud fetch attempt', i + 1, 'failed:', e.message);
+                    if (i === CORS_PROXIES.length - 1) throw e;
+                }
+            }
+            throw new Error('All cloud endpoints failed');
+        }
 
         function getCloudId() { return localStorage.getItem('salaryApp_cloudId') || ''; }
         function setCloudId(id) { localStorage.setItem('salaryApp_cloudId', id); }
@@ -3167,7 +3187,7 @@
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
-                const res = await fetch(CLOUD_API + '/' + cloudId, {
+                const res = await cloudFetch(CLOUD_API + '/' + cloudId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3181,7 +3201,7 @@
             const cloudId = getCloudId();
             if (!cloudId) return false;
             try {
-                const res = await fetch(CLOUD_API + '/' + cloudId);
+                const res = await cloudFetch(CLOUD_API + '/' + cloudId);
                 if (res.ok) {
                     const sd = await res.json();
                     if (sd && sd.data && Object.keys(sd.data).length > 0) {
@@ -3201,7 +3221,7 @@
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
-                const res = await fetch(CLOUD_API, {
+                const res = await cloudFetch(CLOUD_API, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3329,7 +3349,7 @@
             const cloudId = getCloudId();
             if (!cloudId) { setSyncStatus('local'); return; }
             try {
-                const res = await fetch(CLOUD_API + '/' + cloudId);
+                const res = await cloudFetch(CLOUD_API + '/' + cloudId);
                 if (res.ok) {
                     const sd = await res.json();
                     const localTime = localStorage.getItem('salaryApp_lastModified') || '1970-01-01';
@@ -3624,25 +3644,13 @@
             document.getElementById('installBanner').classList.remove('show');
         }
 
-        // ========== SERVICE WORKER ==========
+        // ========== SERVICE WORKER — DISABLED, only cleanup ==========
         if ('serviceWorker' in navigator) {
-            // Force clear ALL old caches first
-            caches.keys().then(names => {
-                names.forEach(name => {
-                    if (name !== 'money-mgmt-v2') caches.delete(name);
-                });
-            });
-            // Unregister all existing SWs and re-register fresh
+            // NUKE all service workers and caches — they were blocking cloud API
+            caches.keys().then(names => names.forEach(n => caches.delete(n)));
             navigator.serviceWorker.getRegistrations().then(regs => {
-                const unregPromises = regs.map(r => r.unregister());
-                return Promise.all(unregPromises);
-            }).then(() => {
-                return navigator.serviceWorker.register('/sw.js');
-            }).then(reg => {
-                reg.update(); // Force check for new SW
-                console.log('SW registered fresh:', reg.scope);
-            }).catch(err => {
-                console.log('SW registration failed (file:// mode is OK):', err);
+                regs.forEach(r => r.unregister());
+                if (regs.length > 0) console.log('Removed', regs.length, 'old service workers');
             });
         }
 
@@ -3655,11 +3663,18 @@
             // Auto-link Cloud ID from URL parameter ?cloud=XXXXX
             const urlParams = new URLSearchParams(window.location.search);
             const urlCloud = urlParams.get('cloud');
-            if (urlCloud && urlCloud.length > 5) {
+            if (urlCloud && urlCloud.length > 10) {
                 setCloudId(urlCloud);
                 // Clean URL without reloading
                 const cleanUrl = window.location.origin + window.location.pathname;
                 window.history.replaceState({}, '', cleanUrl);
+            }
+
+            // Clean up invalid cloud IDs (must be UUID format, at least 20 chars)
+            const existingCloudId = getCloudId();
+            if (existingCloudId && existingCloudId.length < 20) {
+                localStorage.removeItem('salaryApp_cloudId');
+                console.log('Removed invalid cloud ID:', existingCloudId);
             }
 
             loadAll();
