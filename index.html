@@ -4195,6 +4195,7 @@
                         </div>
                     </div>
                     <div style="display:flex; gap:6px; align-items:center;">
+                        <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${bill.paid ? '✓' : '◻️'}</button>
                         <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
                     </div>
