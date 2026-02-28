@@ -3190,7 +3190,7 @@
             return { data: JSON.parse(decoded), sha: json.sha };
         }
 
-        // Write data to GitHub
+        // Write data to GitHub (auto-retries on SHA conflict)
         async function ghWrite(payload, sha) {
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
             const body = { message: 'sync ' + new Date().toISOString(), content: content };
@@ -3204,10 +3204,34 @@
                 },
                 body: JSON.stringify(body)
             });
-            return res.ok || res.status === 201;
+            if (res.ok || res.status === 201) return true;
+            // SHA conflict (409) or validation error (422) — retry with fresh SHA
+            if (res.status === 409 || res.status === 422) {
+                console.log('SHA conflict, retrying with fresh SHA...');
+                const freshSha = await getGitHubFileSha();
+                const body2 = { message: 'sync retry ' + new Date().toISOString(), content: content };
+                if (freshSha) body2.sha = freshSha;
+                const res2 = await fetch(GH_API, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'token ' + getGHToken(),
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body2)
+                });
+                if (res2.ok || res2.status === 201) return true;
+                console.error('Retry also failed:', res2.status);
+            }
+            console.error('ghWrite failed:', res.status);
+            return false;
         }
 
+        let _syncBusy = false;
+
         async function cloudPush() {
+            if (_syncBusy) return { ok: false, reason: 'busy' };
+            _syncBusy = true;
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
@@ -3219,24 +3243,35 @@
                 console.error('cloudPush error:', e);
                 setSyncStatus('offline');
                 return { ok: false, reason: 'network' };
+            } finally {
+                _syncBusy = false;
             }
         }
 
         async function cloudPull() {
+            if (_syncBusy) return false;
+            _syncBusy = true;
             try {
                 const result = await ghRead();
-                if (result && result.data && result.data.data && Object.keys(result.data.data).length > 0) {
-                    setAllLocalData(result.data);
+                if (!result || !result.data) return false;
+                const sd = result.data;
+                // If cloud has valid app data, load it
+                if (sd.data && Object.keys(sd.data).length > 0) {
+                    setAllLocalData(sd);
                     applyNames();
                     renderAll();
                     setSyncStatus('synced');
                     return true;
                 }
+                // Cloud exists but has no app data yet — not an error, just empty
+                return true;
             } catch (e) {
                 console.error('cloudPull error:', e);
                 setSyncStatus('offline');
+                return false;
+            } finally {
+                _syncBusy = false;
             }
-            return false;
         }
 
         async function createNewCloud() {
@@ -3319,9 +3354,12 @@
 
         async function doCloudPush() {
             document.getElementById('syncMenu').classList.remove('active');
+            showSyncToast('Uploading...');
             const result = await cloudPush();
             if (result.ok) {
-                showSyncToast('Uploaded to cloud!');
+                showSyncToast('\u2705 Uploaded to cloud!');
+            } else if (result.reason === 'busy') {
+                showSyncToast('Sync in progress, try again');
             } else if (result.reason === 'network') {
                 showSyncToast('No internet connection');
             } else {
@@ -3331,8 +3369,9 @@
 
         async function doCloudPull() {
             document.getElementById('syncMenu').classList.remove('active');
+            showSyncToast('Downloading...');
             const ok = await cloudPull();
-            showSyncToast(ok ? 'Downloaded from cloud!' : 'Cloud download failed');
+            showSyncToast(ok ? '\u2705 Downloaded from cloud!' : 'Cloud download failed');
         }
 
         async function cloudAutoSync() {
