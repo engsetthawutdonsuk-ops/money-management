@@ -3169,7 +3169,7 @@
                 const payload = getAllLocalData();
                 const res = await fetch(CLOUD_API + '/' + cloudId, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (res.ok) { setSyncStatus('synced'); return { ok: true }; }
@@ -3203,7 +3203,7 @@
                 const payload = getAllLocalData();
                 const res = await fetch(CLOUD_API, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (res.ok || res.status === 201) {
@@ -3626,8 +3626,21 @@
 
         // ========== SERVICE WORKER ==========
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then(reg => {
-                console.log('SW registered:', reg.scope);
+            // Force clear ALL old caches first
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    if (name !== 'money-mgmt-v2') caches.delete(name);
+                });
+            });
+            // Unregister all existing SWs and re-register fresh
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                const unregPromises = regs.map(r => r.unregister());
+                return Promise.all(unregPromises);
+            }).then(() => {
+                return navigator.serviceWorker.register('/sw.js');
+            }).then(reg => {
+                reg.update(); // Force check for new SW
+                console.log('SW registered fresh:', reg.scope);
             }).catch(err => {
                 console.log('SW registration failed (file:// mode is OK):', err);
             });
