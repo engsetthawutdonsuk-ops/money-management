@@ -1366,7 +1366,8 @@
                     <button onclick="doCloudPush()">Upload to Cloud</button>
                     <button onclick="doCloudPull()">Download from Cloud</button>
                     <button onclick="createNewCloud()">Create New Cloud ID</button>
-                    <div class="sync-menu-sub">Share the Cloud ID with your partner — both use the same ID</div>
+                    <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Copy Share Link for Partner</button>
+                    <div class="sync-menu-sub">Creates a link that auto-connects — just send via LINE!</div>
                     <div class="sync-menu-divider"></div>
                     <div class="sync-menu-title">📶 Local Server Sync (Same WiFi)</div>
                     <button onclick="doSyncPush()">Upload to Server</button>
@@ -3206,21 +3207,82 @@
                     body: JSON.stringify(payload)
                 });
                 if (res.ok || res.status === 201) {
-                    // Extract blob ID from Location header
                     const loc = res.headers.get('Location') || '';
                     const newId = loc.split('/').pop();
                     if (newId && newId.length > 5) {
                         setCloudId(newId);
                         document.getElementById('cloudIdInput').value = newId;
                         setSyncStatus('synced');
-                        setCloudStatus('Cloud linked! Share this ID with your partner.', 'ok');
-                        showSyncToast('New Cloud ID created! Share: ' + newId.substring(0, 12) + '...');
+                        setCloudStatus('Cloud linked!', 'ok');
+                        // Show share link in modal
+                        showShareLink(newId);
                         return;
                     }
                 }
-                showSyncToast('Failed to create cloud — try again');
+                showSyncToast('Failed to create cloud - try again');
             } catch (e) {
-                showSyncToast('No internet — cannot create cloud');
+                showSyncToast('No internet - cannot create cloud');
+            }
+        }
+
+        function getShareLink() {
+            const cloudId = getCloudId();
+            if (!cloudId) return null;
+            // Use GitHub Pages URL as base
+            const base = window.location.origin + window.location.pathname;
+            return base + '?cloud=' + cloudId;
+        }
+
+        function showShareLink(cloudId) {
+            const link = getShareLink();
+            if (!link) { showSyncToast('Create a Cloud ID first'); return; }
+            const overlay = document.getElementById('shareOverlay');
+            const box = document.getElementById('shareBox');
+            box.innerHTML = `
+                <h3>\u2705 Cloud Created! Send this link to your partner:</h3>
+                <textarea id="shareLinkArea" readonly onclick="this.select()" style="min-height:60px; font-size:0.85rem;">${link}</textarea>
+                <div class="share-hint">
+                    <strong>Your partner just needs to:</strong><br>
+                    1. Open this link on their iPhone/computer<br>
+                    2. The app opens with all data synced automatically!<br>
+                    3. Any changes either of you make will sync via \u2601\ufe0f Sync<br><br>
+                    Send this link via <strong>LINE / WhatsApp / SMS</strong>
+                </div>
+                <div class="share-actions">
+                    <button class="btn btn-primary btn-sm" onclick="copyLinkToClipboard()">\ud83d\udccb Copy Link</button>
+                    <button class="btn btn-ghost btn-sm" onclick="closeShare()">Close</button>
+                </div>
+            `;
+            overlay.classList.add('active');
+        }
+
+        function copyShareLink() {
+            document.getElementById('syncMenu').classList.remove('active');
+            const cloudId = getCloudId();
+            if (!cloudId) {
+                showSyncToast('Create a Cloud ID first using the button above');
+                return;
+            }
+            // Push latest data first
+            cloudPush().then(() => {
+                showShareLink(cloudId);
+            });
+        }
+
+        function copyLinkToClipboard() {
+            const area = document.getElementById('shareLinkArea');
+            area.select();
+            area.setSelectionRange(0, 99999999);
+            try {
+                navigator.clipboard.writeText(area.value).then(() => {
+                    showSyncToast('Link copied! Send it to your partner');
+                }).catch(() => {
+                    document.execCommand('copy');
+                    showSyncToast('Link copied!');
+                });
+            } catch (e) {
+                document.execCommand('copy');
+                showSyncToast('Link copied!');
             }
         }
 
@@ -3562,6 +3624,16 @@
             const now = new Date();
             currentMonth = now.getMonth();
             currentYear = now.getFullYear();
+
+            // Auto-link Cloud ID from URL parameter ?cloud=XXXXX
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlCloud = urlParams.get('cloud');
+            if (urlCloud && urlCloud.length > 5) {
+                setCloudId(urlCloud);
+                // Clean URL without reloading
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+            }
 
             loadAll();
             applyNames();
