@@ -2111,7 +2111,9 @@
                 // want displayed amount to be 0 by default.
                 const bill = getCardBill(card, key);
                 const saved = stateMap[idx] || {};
-                const amountVal = (isNewMonth && (!bill || !bill.amount)) ? 0 : (bill.amount || 0);
+                // If this is a newly created month, always show 0 so user must set it
+                // (TBD). Do not prefill from previously stored monthly bills.
+                const amountVal = isNewMonth ? 0 : (bill.amount || 0);
                 md.expenses.push({
                     date: saved.date || dateStr,
                     amount: amountVal,
