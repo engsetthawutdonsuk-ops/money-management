@@ -1360,21 +1360,13 @@
                     ☁️ Sync <span class="sync-dot" id="syncDot"></span>
                 </button>
                 <div class="sync-menu" id="syncMenu">
-                    <div class="sync-menu-title">☁️ Cloud Sync (GitHub)</div>
+                    <div class="sync-menu-title">☁️ Sync</div>
                     <div class="sync-cloud-status" id="cloudStatus"></div>
-                    <button onclick="doCloudPush()">⬆️ Upload to Cloud</button>
-                    <button onclick="doCloudPull()">⬇️ Download from Cloud</button>
-                    <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Copy Share Link for Partner</button>
-                    <div class="sync-menu-sub">Send this link via LINE — partner opens it and sees all data!</div>
+                    <button onclick="doSyncNow()">⚡ Sync Now</button>
+                    <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Share Link</button>
+                    <div class="sync-menu-sub">One action to save your changes and get the latest updates.</div>
                     <div class="sync-menu-divider"></div>
-                    <div class="sync-menu-title">📶 Local Server Sync (Same WiFi)</div>
-                    <button onclick="doSyncPush()">Upload to Server</button>
-                    <button onclick="doSyncPull()">Download from Server</button>
-                    <div class="sync-menu-divider"></div>
-                    <div class="sync-menu-title">📋 Share Code (Manual Copy/Paste)</div>
-                    <button onclick="shareExport()">Generate Share Code</button>
-                    <button onclick="shareImport()">Import Share Code</button>
-                    <div class="sync-info" id="syncInfo">Status: Checking...</div>
+                    <div class="sync-info" id="syncInfo">Status: Ready</div>
                 </div>
             </div>
         </div>
@@ -1951,72 +1943,44 @@
         };
 
         // Initialize Firebase (compat)
-        // Expose `firebaseDb` globally so other functions can use transactions
-        let firebaseDb = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            firebaseDb = firebase.database();
+            const db = firebase.database();
 
-            // Load from Firebase (realtime listener) — merge cloud data into local without clobbering local edits
+            // Load from Firebase (realtime listener)
             function loadFromFirebaseRealtime() {
                 try {
                     db.ref('shared_money_data').on('value', (snapshot) => {
                         const cloudData = snapshot.val();
                         if (cloudData) {
-                            // Merge month-level data: only add months that don't exist locally to avoid overwriting local edits
-                            if (cloudData.data) {
-                                Object.keys(cloudData.data).forEach(m => {
-                                    if (!data[m]) data[m] = cloudData.data[m];
-                                });
-                            }
-                            // Merge settings: keep local values but fill missing fields from cloud
-                            if (cloudData.settings) {
-                                settings = Object.assign({}, cloudData.settings, settings);
-                            }
-                            // If local fixed/cc lists are empty, adopt cloud versions
-                            if ((!fixedExpenses || fixedExpenses.length === 0) && cloudData.fixedExpenses) {
-                                fixedExpenses = cloudData.fixedExpenses;
-                            }
-                            if ((!creditCards || creditCards.length === 0) && cloudData.creditCards) {
-                                creditCards = cloudData.creditCards;
-                            }
-                            // Persist merged data locally without updating lastModified
+                            // Merge or overwrite depending on your preference — here we overwrite
+                            data = cloudData.data || cloudData;
+                            if (cloudData.settings) settings = cloudData.settings;
+                            if (cloudData.fixedExpenses) fixedExpenses = cloudData.fixedExpenses;
+                            if (cloudData.creditCards) creditCards = cloudData.creditCards;
+                            // Persist but do NOT update lastModified (we preserve cloud timestamp if present)
                             saveDataQuiet();
-                            if (cloudData.lastModified) {
-                                // cloudData.lastModified may be server timestamp (number) or ISO string
-                                try {
-                                    const lm = typeof cloudData.lastModified === 'number' ? new Date(cloudData.lastModified).toISOString() : cloudData.lastModified;
-                                    localStorage.setItem('salaryApp_lastModified', lm);
-                                    setCloudStatus('Firebase: connected — last: ' + lm, 'ok');
-                                } catch (e) { setCloudStatus('Firebase: connected', 'ok'); }
-                            } else {
-                                setCloudStatus('Firebase: connected', 'ok');
-                            }
+                            if (cloudData.lastModified) localStorage.setItem('salaryApp_lastModified', cloudData.lastModified);
                             renderAll();
-                            console.log('📥 Merged data from Firebase realtime');
+                            console.log('📥 Loaded data from Firebase realtime');
                         }
                     });
                 } catch (e) { console.warn('Firebase load error', e); }
             }
 
-            // Save to Firebase using per-month updates to avoid clobbering other clients
+            // Save to Firebase (overwrite path)
             function saveToFirebase() {
                 try {
-                    const key = currentKey();
-                    const monthData = data[key] || {};
-                    const payload = {};
-                    // write only the current month under /data/<YYYY-MM>
-                    payload['data/' + key] = monthData;
-                    // also update settings and lists so they stay in sync
-                    payload['settings'] = settings;
-                    if (fixedExpenses && fixedExpenses.length > 0) payload['fixedExpenses'] = fixedExpenses;
-                    if (creditCards && creditCards.length > 0) payload['creditCards'] = creditCards;
-                    // server timestamp for lastModified
-                    payload['lastModified'] = firebase.database.ServerValue.TIMESTAMP;
-
-                    return firebaseDb.ref('shared_money_data').update(payload)
-                        .then(() => { console.log('☁️ Updated Firebase (month:', key, ')'); })
-                        .catch(err => { console.error('Firebase update failed', err); });
+                    const payload = {
+                        data: data,
+                        settings: settings,
+                        fixedExpenses: fixedExpenses,
+                        creditCards: creditCards,
+                        lastModified: localStorage.getItem('salaryApp_lastModified') || new Date().toISOString()
+                    };
+                    return db.ref('shared_money_data').set(payload)
+                        .then(() => { console.log('☁️ Saved to Firebase'); })
+                        .catch(err => { console.error('Firebase save failed', err); });
                 } catch (e) { console.error('Firebase save exception', e); }
             }
 
@@ -2176,6 +2140,37 @@
             fixedExpenses = fx ? JSON.parse(fx) : [];
             const cc = localStorage.getItem(ccKey());
             creditCards = cc ? JSON.parse(cc) : [];
+        }
+
+        // Restore all data from local `cloud-data.json` (used as backup)
+        async function restoreAllFromCloudData() {
+            try {
+                const res = await fetch('./cloud-data.json?t=' + Date.now());
+                if (!res.ok) throw new Error('Cannot fetch cloud-data.json');
+                const parsed = await res.json();
+                // cloud-data.json has top-level keys: data, settings, fixedExpenses, creditCards, lastModified
+                if (parsed) {
+                    setAllLocalData(parsed);
+                    if (parsed.fixedExpenses) fixedExpenses = parsed.fixedExpenses;
+                    if (parsed.creditCards) creditCards = parsed.creditCards || [];
+                    if (parsed.settings) settings = parsed.settings || settings;
+                    if (parsed.lastModified) localStorage.setItem('salaryApp_lastModified', parsed.lastModified);
+                    // Persist helper collections
+                    try { localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses)); } catch (e) {}
+                    try { localStorage.setItem(ccKey(), JSON.stringify(creditCards)); } catch (e) {}
+                    try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch (e) {}
+                    saveDataQuiet();
+                    applyNames();
+                    renderAll();
+                    showToast('Restored all data from cloud-data.json', 'success');
+                    console.log('Restore complete from cloud-data.json');
+                    return true;
+                }
+            } catch (e) {
+                console.error('restoreAllFromCloudData failed', e);
+                showToast('Restore failed: ' + (e.message || e), 'err');
+                return false;
+            }
         }
 
         function saveFixed() {
@@ -2575,49 +2570,6 @@
             const md = getMonthData();
             const e = md.expenses[index];
             if (!e) return;
-            // If Firebase is available, use a transaction to toggle paid atomically on the cloud
-            if (typeof firebaseDb !== 'undefined' && firebaseDb) {
-                const key = currentKey();
-                const ref = firebaseDb.ref('shared_money_data/data/' + key + '/expenses');
-                // Optimistically toggle locally for snappy UI
-                e.paid = !e.paid;
-                renderExpenseTable(document.getElementById('searchInput').value);
-                renderSummary();
-                // Run transaction on expenses array
-                ref.transaction((expenses) => {
-                    if (!expenses || !expenses[index]) return expenses;
-                    expenses[index].paid = !expenses[index].paid;
-                    return expenses;
-                }, (err, committed, snapshot) => {
-                    if (err) {
-                        console.error('Firebase transaction failed', err);
-                        // revert local change on error
-                        e.paid = !e.paid;
-                        saveDataQuiet();
-                        renderExpenseTable(document.getElementById('searchInput').value);
-                        renderSummary();
-                        showToast('Failed to update cloud', 'error');
-                    } else if (!committed) {
-                        console.log('Firebase transaction aborted');
-                    } else {
-                        // Commit local state from snapshot
-                        const updated = snapshot.val();
-                        if (updated) {
-                            const mdLocal = getMonthData();
-                            mdLocal.expenses = updated;
-                            saveDataQuiet();
-                            renderExpenseTable(document.getElementById('searchInput').value);
-                            renderSummary();
-                            showToast(e.paid ? `"${e.desc}" marked as paid ✅` : `"${e.desc}" marked as unpaid`, e.paid ? 'success' : '');
-                        }
-                    }
-                });
-                // Also sync CC if needed (local change already applied)
-                if (e.isCreditCard) { syncCCFromExpense(e); renderCreditCards(); }
-                return;
-            }
-
-            // Fallback: no Firebase — toggle locally and save
             e.paid = !e.paid;
             saveAll();
             // If it's a CC item, sync back to credit card data
@@ -3285,7 +3237,7 @@
                 autoUploadTimer = setTimeout(async () => {
                     // push local changes to GitHub (non-blocking)
                     const res = await cloudPush();
-                    if (res && res.ok) showSyncToast('Auto-uploaded to cloud');
+                    if (res && res.ok) showSyncToast('Auto-saved to cloud');
                 }, AUTO_UPLOAD_DELAY);
             } catch (e) { console.warn('scheduleAutoUpload error', e); }
         }
@@ -3395,6 +3347,13 @@
             _syncBusy = true;
             try {
                 updateLastModified();
+                // Prefer Firebase if available
+                if (typeof saveToFirebase === 'function') {
+                    await saveToFirebase();
+                    setSyncStatus('synced');
+                    return { ok: true };
+                }
+                // Fallback to GitHub contents API if Firebase not present
                 const payload = getAllLocalData();
                 const sha = await getGitHubFileSha();
                 const ok = await ghWrite(payload, sha);
@@ -3413,6 +3372,28 @@
             if (_syncBusy) return false;
             _syncBusy = true;
             try {
+                // Prefer Firebase if available
+                if (typeof firebase !== 'undefined' && firebase.database) {
+                    const snap = await firebase.database().ref('shared_money_data').once('value');
+                    const sd = snap.val();
+                    if (!sd) return false;
+                    // merge or set
+                    if (sd.data) setAllLocalData(sd);
+                    if (sd.fixedExpenses) fixedExpenses = sd.fixedExpenses;
+                    if (sd.creditCards) creditCards = sd.creditCards;
+                    if (sd.settings) settings = sd.settings;
+                    saveDataQuiet();
+                    try { localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses)); } catch (e) {}
+                    try { localStorage.setItem(ccKey(), JSON.stringify(creditCards)); } catch (e) {}
+                    try { localStorage.setItem(settingsKey(), JSON.stringify(settings)); } catch (e) {}
+                    if (sd.lastModified) localStorage.setItem('salaryApp_lastModified', sd.lastModified);
+                    applyNames();
+                    renderAll();
+                    setSyncStatus('synced');
+                    return true;
+                }
+
+                // Fallback to GitHub
                 const result = await ghRead();
                 if (!result || !result.data) return false;
                 const sd = result.data;
@@ -3428,7 +3409,6 @@
                     setSyncStatus('synced');
                     return true;
                 }
-                // Cloud exists but empty — not an error
                 return true;
             } catch (e) {
                 console.error('cloudPull error:', e);
@@ -3519,33 +3499,61 @@
 
         async function doCloudPush() {
             document.getElementById('syncMenu').classList.remove('active');
-            showSyncToast('Uploading...');
+            showSyncToast('Saving data...');
             const result = await cloudPush();
             if (result.ok) {
                 const months = Object.keys(data).length;
                 const md = getMonthData();
                 const expCount = md.expenses ? md.expenses.length : 0;
-                showSyncToast('✅ Uploaded ' + months + ' months (' + expCount + ' exp this month)');
+                showSyncToast('✅ Saved ' + months + ' months (' + expCount + ' exp this month)');
             } else if (result.reason === 'busy') {
                 showSyncToast('Sync in progress, try again');
             } else if (result.reason === 'network') {
                 showSyncToast('No internet connection');
             } else {
-                showSyncToast('Upload failed (' + result.reason + ')');
+                showSyncToast('Save failed (' + result.reason + ')');
             }
         }
 
         async function doCloudPull() {
             document.getElementById('syncMenu').classList.remove('active');
-            showSyncToast('Downloading...');
+            showSyncToast('Getting latest data...');
             const ok = await cloudPull();
             if (ok) {
                 const months = Object.keys(data).length;
                 const md = getMonthData();
                 const expCount = md.expenses ? md.expenses.length : 0;
-                showSyncToast('✅ Downloaded ' + months + ' months (' + expCount + ' exp this month)');
+                showSyncToast('✅ Updated with latest data: ' + months + ' months (' + expCount + ' exp this month)');
             } else {
-                showSyncToast('Cloud download failed');
+                showSyncToast('Get latest failed');
+            }
+        }
+
+        // One-click intelligent sync: save locally, attempt cloud save, then fetch latest
+        async function doSyncNow() {
+            document.getElementById('syncMenu').classList.remove('active');
+            try {
+                showSyncToast('Saving locally...');
+                saveAll();
+                // Try cloud push if available
+                if (typeof cloudPush === 'function') {
+                    showSyncToast('Saving to cloud...');
+                    const res = await cloudPush();
+                    if (res && res.ok) showSyncToast('Saved to cloud');
+                    else showSyncToast('Cloud save skipped or failed');
+                }
+                // Then try pulling latest to merge any remote changes
+                if (typeof cloudPull === 'function') {
+                    showSyncToast('Getting latest data...');
+                    const ok = await cloudPull();
+                    if (ok) showSyncToast('✅ Synchronized with latest data');
+                    else showSyncToast('Get latest failed');
+                }
+                setSyncStatus('synced');
+            } catch (e) {
+                console.error('doSyncNow error', e);
+                showSyncToast('Sync failed');
+                setSyncStatus('offline');
             }
         }
 
@@ -3597,20 +3605,6 @@
         function setCloudStatus(msg, type) {
             const el = document.getElementById('cloudStatus');
             if (el) { el.textContent = msg; el.className = 'sync-cloud-status ' + (type || ''); }
-        }
-
-        // Firebase connection indicator (shows in sync UI)
-        function updateFirebaseStatus(connected, lastTs) {
-            const el = document.getElementById('cloudStatus');
-            if (!el) return;
-            if (connected) {
-                const t = lastTs ? (typeof lastTs === 'number' ? new Date(lastTs).toISOString() : lastTs) : new Date().toISOString();
-                el.textContent = 'Firebase: connected — last: ' + t;
-                el.className = 'sync-cloud-status ok';
-            } else {
-                el.textContent = 'Firebase: offline';
-                el.className = 'sync-cloud-status err';
-            }
         }
 
         // ===== LOCAL SERVER SYNC (Same WiFi) =====
@@ -3727,13 +3721,13 @@
         async function doSyncPush() {
             document.getElementById('syncMenu').classList.remove('active');
             const ok = await syncPush();
-            showSyncToast(ok ? 'Uploaded to server' : 'Server not reachable');
+            showSyncToast(ok ? 'Saved to server' : 'Server not reachable');
         }
 
         async function doSyncPull() {
             document.getElementById('syncMenu').classList.remove('active');
             const ok = await syncPull();
-            showSyncToast(ok ? 'Downloaded from server' : 'Server not reachable');
+            showSyncToast(ok ? 'Updated from server' : 'Server not reachable');
         }
 
         // ========== SHARE CODE (works without WiFi / server) ==========
@@ -3896,6 +3890,14 @@
                 autoSync();
                 setTimeout(() => { try { if (typeof cloudPull === 'function') cloudPull(); } catch (e) {} }, 300);
             }, 500);
+
+            // If no fixed expenses present locally, try restoring once from bundled cloud-data.json
+            try {
+                if (!fixedExpenses || fixedExpenses.length === 0) {
+                    // Force restore fixed lists from bundled backup now
+                    restoreAllFromCloudData().catch(() => {});
+                }
+            } catch (e) { console.warn('Restore check failed', e); }
         }
 
         init();
