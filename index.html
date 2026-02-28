@@ -3140,8 +3140,14 @@
             'https://api.allorigins.win/raw?url='
         ];
 
-        // Smart fetch — tries direct first, then CORS proxies as fallback
+        // Smart fetch — tries direct first, then CORS proxies for GET only
         async function cloudFetch(url, options = {}) {
+            const method = (options.method || 'GET').toUpperCase();
+            // For POST/PUT — only direct (proxies strip response headers)
+            if (method !== 'GET') {
+                return await fetch(url, options);
+            }
+            // For GET — try direct, then proxies
             for (let i = 0; i < CORS_PROXIES.length; i++) {
                 try {
                     const proxyUrl = CORS_PROXIES[i] ? CORS_PROXIES[i] + encodeURIComponent(url) : url;
@@ -3221,25 +3227,44 @@
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
-                const res = await cloudFetch(CLOUD_API, {
+                const res = await fetch(CLOUD_API, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                console.log('createNewCloud status:', res.status);
+                console.log('createNewCloud headers:');
+                res.headers.forEach((v, k) => console.log('  ', k, ':', v));
                 if (res.ok || res.status === 201) {
+                    // Try multiple ways to extract the blob ID
+                    let newId = '';
+                    // Method 1: Location header
                     const loc = res.headers.get('Location') || '';
-                    const newId = loc.split('/').pop();
-                    if (newId && newId.length > 5) {
+                    if (loc) newId = loc.split('/').pop();
+                    // Method 2: X-jsonblob-id header
+                    if (!newId || newId.length < 10) {
+                        newId = res.headers.get('X-jsonblob-id') || '';
+                    }
+                    // Method 3: response URL
+                    if (!newId || newId.length < 10) {
+                        const respUrl = res.url || '';
+                        if (respUrl.includes('/jsonBlob/')) {
+                            newId = respUrl.split('/jsonBlob/').pop();
+                        }
+                    }
+                    console.log('Extracted cloud ID:', newId);
+                    if (newId && newId.length > 10) {
                         setCloudId(newId);
                         document.getElementById('cloudIdInput').value = newId;
                         setSyncStatus('synced');
                         setCloudStatus('Cloud linked!', 'ok');
-                        // Show share link in modal
                         showShareLink(newId);
                         return;
                     }
+                    showSyncToast('Cloud created but ID not found in response. Check console.');
+                } else {
+                    showSyncToast('Cloud returned error ' + res.status);
                 }
-                showSyncToast('Failed to create cloud - try again');
             } catch (e) {
                 showSyncToast('No internet - ' + (e.message || e));
                 console.error('createNewCloud error:', e);
