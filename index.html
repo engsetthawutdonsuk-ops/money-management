@@ -4138,10 +4138,9 @@
                             <span class="person-tag ${paidByClass}">${ownerLabel}</span>
                         </div>
                     </div>
-                    <div class="fc-amount">${amtHtml}</div>
                     <div style="display:flex; gap:6px;">
                         <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
-                        ${hasAmount ? `<button class="btn-icon" onclick="openCCBillModal(${i})" title="Update amount">💰</button>` : `<button class="btn-icon" onclick="openCCBillModal(${i})" title="Set amount">💰</button>`}
+                        <button class="btn-icon" onclick="openCCBillModal(${i})" title="${hasAmount ? 'Update amount' : 'Set amount'}">💰</button>
                         <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
                     </div>
