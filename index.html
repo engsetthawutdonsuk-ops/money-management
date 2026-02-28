@@ -1458,8 +1458,7 @@
             </div>
             <div class="summary-item balance">
                 <div class="s-label">Balance</div>
-                <div class="s-value" id="sumBalance">฿0</div>
-                <div class="s-sub" id="sumBalancePct">0% remaining</div>
+                <div class="s-value" id="sumBalance">฿0 <span class="s-half" id="sumBalHalf">÷2 = ฿0 / person</span></div>
             </div>
             <div class="summary-item savings">
                 <div class="s-label">Balance Rate</div>
@@ -2299,11 +2298,11 @@
             document.getElementById('sumExpenseCount').textContent = `${md.expenses.length} items (${paidCount} paid, ${unpaidCount} unpaid)`;
 
             const balEl = document.getElementById('sumBalance');
-            balEl.textContent = fmtSigned(balance);
+            const balHalfSpan = document.getElementById('sumBalHalf');
+            balEl.firstChild.textContent = fmtSigned(balance) + ' ';
             balEl.style.color = balance >= 0 ? 'var(--primary)' : 'var(--danger)';
 
-            const pctRemain = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
-            document.getElementById('sumBalancePct').textContent = `${pctRemain}% remaining`;
+            // Per-person split is shown in the floating pill; overall percent remaining removed by user request.
 
             const savEl = document.getElementById('sumSavings');
             savEl.textContent = savingsRate.toFixed(1) + '%';
@@ -2319,7 +2318,9 @@
                 : 'No saving items';
 
             // ===== BALANCE ÷ 2 =====
-            // Per-person split display removed by user request.
+            const balEach = balance / 2;
+            balHalfSpan.textContent = `÷2 = ${fmtSigned(balEach)} / person`;
+            balHalfSpan.classList.toggle('negative', balEach < 0);
 
             // ===== PER-PERSON BALANCE =====
             const salary1 = md.salary1 || 0;
