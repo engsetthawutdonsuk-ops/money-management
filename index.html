@@ -549,6 +549,18 @@
         .ec-amount-val { font-size: 0.95rem; font-weight: 800; color: var(--danger); }
         .ec-amount-sub { font-size: 0.6rem; font-weight: 600; display: block; color: var(--text-light); }
 
+        .tbd-pill {
+            display: inline-block;
+            background: linear-gradient(135deg,#fff7ed,#ffedd5);
+            color: #b45309;
+            font-weight: 800;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 6px rgba(249,115,22,0.12);
+        }
+        .amount-set-btn { display:inline-block; margin-top:6px; color:var(--text); font-weight:700; cursor:pointer; }
+
         .ec-actions { display: flex; gap: 4px; }
         .ec-actions .btn-icon { width: 28px; height: 28px; font-size: 0.78rem; border-radius: 6px; }
 
@@ -2448,11 +2460,11 @@
             // Amount section
             let amtHtml = '', amtSub = '';
             if (isCCItem && e.amount === 0) {
-                amtHtml = `<span class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</span>`;
+                amtHtml = `<div class="tbd-pill">❓ TBD</div><div><span class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</span></div>`;
             } else if (isCCItem && e.amount > 0) {
                 amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span>`;
             } else if (needsAmt) {
-                amtHtml = `<span class="amount-set-btn" onclick="openAmountUpdate(${origIdx})">💰 Set</span>`;
+                amtHtml = `<div class="tbd-pill">❓ TBD</div><div><span class="amount-set-btn" onclick="openAmountUpdate(${origIdx})">💰 Set</span></div>`;
             } else if (e.isFixed && e.amountOverride !== null && e.amountOverride !== undefined) {
                 amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span>`;
                 if (e.defaultAmount && e.defaultAmount > 0 && e.amountOverride !== e.defaultAmount) {
