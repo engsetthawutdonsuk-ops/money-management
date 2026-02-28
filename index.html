@@ -847,22 +847,25 @@
             font-size: 0.82rem;
         }
         .amount-set-btn {
-            display: inline-block;
-            margin-top: 3px;
-            padding: 3px 10px;
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #fff3d8, #ffd57a);
             border: 1.5px solid #f59e0b;
-            border-radius: 6px;
-            font-size: 0.72rem;
+            border-radius: 10px;
+            font-size: 0.84rem;
             font-weight: 800;
             color: #92400e;
             cursor: pointer;
-            transition: all 0.2s;
-            animation: pulse-amount 2s infinite;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 6px 12px rgba(245,158,11,0.08);
         }
         .amount-set-btn:hover {
-            background: linear-gradient(135deg, #fde68a, #fbbf24);
-            transform: scale(1.08);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px rgba(245,158,11,0.12);
+            background: linear-gradient(135deg, #fff0c8, #ffc855);
         }
         @keyframes pulse-amount {
             0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
