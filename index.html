@@ -2610,8 +2610,8 @@
 
             let html = '';
             html += renderSection('fixed', '📌', 'Fixed Expenses', fixedItems, md, 'fixed');
-            // Note: credit card bills are shown on the dedicated Credit Cards page only.
-            // We do not render CC items in the main pay-list to avoid duplication.
+            // Also include credit card bills in the pay-list so users can set/update per-month amounts
+            html += renderSection('cc', '💳', 'Credit Card Bills', ccItems, md, 'cc');
 
             // Each category as its own section
             const catOrder = Object.keys(catGroups).sort();
