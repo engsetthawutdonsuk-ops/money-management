@@ -2020,17 +2020,18 @@
 
         function getMonthData() {
             const k = currentKey();
+            const existed = !!data[k];
             if (!data[k]) {
                 data[k] = { salary1: 0, salary2: 0, expenses: [] };
             }
-            // Always sync fixed expenses into this month
-            syncFixedExpenses(k);
-            // Always sync credit card bills into this month
-            syncCreditCards(k);
+            // When a month is first created, sync fixed/cc items as placeholders
+            // with no prefilled amounts so user must set amounts per-month.
+            syncFixedExpenses(k, !existed);
+            syncCreditCards(k, !existed);
             return data[k];
         }
 
-        function syncFixedExpenses(key) {
+        function syncFixedExpenses(key, isNewMonth) {
             if (!data[key]) return;
             const md = data[key];
             const [y, m] = key.split('-');
@@ -2051,13 +2052,17 @@
             // Remove all old fixed items
             md.expenses = md.expenses.filter(e => !e.isFixed);
 
-            // Re-add from current fixedExpenses list, preserving paid status & custom amounts
+            // Re-add from current fixedExpenses list.
+            // For a newly created month we intentionally do NOT prefill amounts
+            // (unless the user previously set an override for this month), so
+            // the user must set the amount each month.
             fixedExpenses.forEach((fe, idx) => {
                 const saved = stateMap[idx] || {};
                 const hasOverride = saved.amountOverride !== null && saved.amountOverride !== undefined;
+                const amountVal = hasOverride ? saved.amountOverride : (isNewMonth ? 0 : fe.amount);
                 md.expenses.unshift({
                     date: saved.date || dateStr,
-                    amount: hasOverride ? saved.amountOverride : fe.amount,
+                    amount: amountVal,
                     defaultAmount: fe.amount, // template/default amount for reference
                     desc: fe.desc,
                     category: fe.category,
@@ -2072,7 +2077,7 @@
             saveDataQuiet();
         }
 
-        function syncCreditCards(key) {
+        function syncCreditCards(key, isNewMonth) {
             if (!data[key]) return;
             const md = data[key];
             const [y, m] = key.split('-');
@@ -2089,13 +2094,18 @@
             // Remove all old cc items
             md.expenses = md.expenses.filter(e => !e.isCreditCard);
 
-            // Re-add from current creditCards list
+            // Re-add from current creditCards list. For new months, prefer an
+            // empty amount (0) so user must set the bill for that month.
             creditCards.forEach((card, idx) => {
+                // Avoid creating stored monthly bill entries unless needed; getCardBill
+                // will return an existing bill or create a new one. For new month we
+                // want displayed amount to be 0 by default.
                 const bill = getCardBill(card, key);
                 const saved = stateMap[idx] || {};
+                const amountVal = (isNewMonth && (!bill || !bill.amount)) ? 0 : (bill.amount || 0);
                 md.expenses.push({
                     date: saved.date || dateStr,
-                    amount: bill.amount || 0,
+                    amount: amountVal,
                     desc: '💳 ' + card.name,
                     category: 'Debt/Loan',
                     paidBy: card.owner || 'shared',
