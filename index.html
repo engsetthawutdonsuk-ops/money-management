@@ -1907,8 +1907,9 @@
                 <input type="hidden" id="ccBillCardIdx" value="-1">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeCCBillModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveCCBill()">💰 Save Amount</button>
+                        <button class="btn btn-ghost" onclick="resetCCBill()">Reset to Default</button>
+                        <button class="btn btn-ghost" onclick="closeCCBillModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveCCBill()">💰 Save Amount</button>
             </div>
         </div>
     </div>
@@ -4041,17 +4042,32 @@
             const key = currentKey();
             const bill = getCardBill(card, key);
             const monthLabel = new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
             document.getElementById('ccBillCardIdx').value = cardIdx;
             document.getElementById('ccBillAmt').value = bill.amount || '';
+            const defaultEstimate = card.defaultAmount && card.defaultAmount > 0 ? fmt(card.defaultAmount) : 'Not set yet';
             document.getElementById('ccBillInfo').innerHTML = `
                 <div class="au-desc">💳 ${card.name}</div>
                 <div class="au-default" style="font-size:0.8rem; color:var(--text-light); margin-top:4px;">📅 ${monthLabel}</div>
-                ${bill.amount > 0 ? `<div style="font-size:0.75rem; color:var(--primary); margin-top:4px;">Current: ${fmt(bill.amount)}</div>` : ''}
+                <div class="au-default" style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">Default estimate: ${defaultEstimate}</div>
+                ${bill.amount > 0 ? `<div style="font-size:0.75rem; color:var(--primary); margin-top:6px;">Current: ${fmt(bill.amount)}</div>` : ''}
             `;
             document.getElementById('ccBillModalTitle').textContent = bill.amount > 0 ? '✏️ Update Bill Amount' : '💰 Set Bill Amount';
             document.getElementById('ccBillModal').classList.add('active');
             setTimeout(() => document.getElementById('ccBillAmt').focus(), 100);
+        }
+
+        function resetCCBill() {
+            const cardIdx = parseInt(document.getElementById('ccBillCardIdx').value);
+            const card = creditCards[cardIdx];
+            if (!card) return;
+            const key = currentKey();
+            if (!card.monthlyBills) card.monthlyBills = {};
+            card.monthlyBills[key] = { amount: 0, paid: false };
+            saveCC();
+            closeCCBillModal();
+            renderCreditCards();
+            renderAll();
+            showToast('Reset to default (TBD) for this card', 'success');
         }
 
         function openCCBillFromList(expIdx) {
