@@ -2794,7 +2794,6 @@
             if (index >= 0) {
                 const fe = fixedExpenses[index];
                 document.getElementById('fixedDesc').value = fe.desc;
-                document.getElementById('fixedAmount').value = fe.amount;
                 document.getElementById('fixedPaidBy').value = fe.paidBy;
                 document.getElementById('fixedCategory').value = fe.category;
                 document.getElementById('fixedNote').value = fe.note || '';
@@ -2802,7 +2801,6 @@
                 selectFixedCatChip(fe.category);
             } else {
                 document.getElementById('fixedDesc').value = '';
-                document.getElementById('fixedAmount').value = '';
                 document.getElementById('fixedPaidBy').value = 'shared';
                 document.getElementById('fixedCategory').value = '';
                 document.getElementById('fixedNote').value = '';
