@@ -2002,7 +2002,7 @@
                     amountOverride: hasOverride ? saved.amountOverride : null
                 });
             });
-            saveAll();
+            saveDataQuiet();
         }
 
         function syncCreditCards(key) {
@@ -2039,7 +2039,7 @@
                     paid: !!bill.paid
                 });
             });
-            saveAll();
+            saveDataQuiet();
         }
 
         function syncCCFromExpense(expense) {
@@ -2061,6 +2061,12 @@
         function saveAll() {
             localStorage.setItem(storageKey(), JSON.stringify(data));
             updateLastModified();
+        }
+
+        // Save data to localStorage WITHOUT updating lastModified
+        // Used by sync functions that restructure data (not user edits)
+        function saveDataQuiet() {
+            localStorage.setItem(storageKey(), JSON.stringify(data));
         }
 
         function loadAll() {
@@ -3257,8 +3263,8 @@
                 const sd = result.data;
                 if (sd.data && Object.keys(sd.data).length > 0) {
                     setAllLocalData(sd);
-                    // Persist everything to localStorage
-                    saveAll();
+                    // Persist everything to localStorage (without changing lastModified)
+                    saveDataQuiet();
                     localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
                     localStorage.setItem(ccKey(), JSON.stringify(creditCards));
                     localStorage.setItem(settingsKey(), JSON.stringify(settings));
