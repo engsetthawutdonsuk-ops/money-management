@@ -2510,9 +2510,9 @@
                             <span class="person-tag ${paidClassTag}">${ownerLabel}</span>
                         </div>
                     </div>
-                    <div class="fc-amount">${amtHtml}${amtSub}</div>
+                        <div class="fc-amount">${amtHtml}${amtSub}</div>
                     <div style="display:flex; gap:6px;">
-                        ${ccAmtBtn}
+                        
                         <button class="btn-icon" onclick="openCardModal(${cardIdx})" title="Edit card">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${cardIdx})" title="Delete card">🗑️</button>
                     </div>
@@ -2536,7 +2536,7 @@
                 <div class="ec-right">
                     <div class="ec-amount">${amtHtml}${amtSub}</div>
                     <div class="ec-actions">
-                        ${amtBtn}${ccAmtBtn}
+                        ${amtBtn}
                         ${editBtn}
                         ${delBtn}
                     </div>
@@ -4175,7 +4175,7 @@
                 if (isPaid) cardClass += ' is-paid';
                 if (!hasAmount) cardClass += ' needs-amount';
 
-                const amtHtml = hasAmount ? `<div>${fmt(bill.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">credit bill</div>` : `<div style="color:var(--warning); font-size:0.9rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">set bill</div>`;
+                const amtHtml = hasAmount ? `<div>${fmt(bill.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">credit bill</div>` : `<div style="color:var(--warning); font-size:0.9rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500; margin-bottom:6px;">set bill</div><div><button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</button></div>`;
 
                 return `<div class="${cardClass}">
                     <div class="fc-info">
@@ -4187,7 +4187,6 @@
                     </div>
                     <div style="display:flex; gap:6px; align-items:center;">
                         <button class="btn-icon" onclick="toggleCCPaid(${i})" title="Toggle paid">${isPaid ? '✓' : '◻️'}</button>
-                        ${hasAmount ? `<button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Update</button>` : `<button class="amount-set-btn" onclick="openCCBillModal(${i})">💰 Set</button>`}
                         <button class="btn-icon" onclick="openCardModal(${i})" title="Edit">✏️</button>
                         <button class="btn-icon" onclick="deleteCard(${i})" title="Delete">🗑️</button>
                     </div>
