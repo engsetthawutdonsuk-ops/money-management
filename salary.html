@@ -3163,7 +3163,7 @@
         // ===== CLOUD SYNC (jsonblob.com — works from anywhere) =====
         async function cloudPush() {
             const cloudId = getCloudId();
-            if (!cloudId) return false;
+            if (!cloudId) return { ok: false, reason: 'no-id' };
             try {
                 updateLastModified();
                 const payload = getAllLocalData();
@@ -3172,9 +3172,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (res.ok) { setSyncStatus('synced'); return true; }
-            } catch (e) { setSyncStatus('offline'); }
-            return false;
+                if (res.ok) { setSyncStatus('synced'); return { ok: true }; }
+                return { ok: false, reason: 'http-' + res.status };
+            } catch (e) { setSyncStatus('offline'); return { ok: false, reason: 'network' }; }
         }
 
         async function cloudPull() {
@@ -3303,8 +3303,18 @@
         async function doCloudPush() {
             document.getElementById('syncMenu').classList.remove('active');
             if (!getCloudId()) { showSyncToast('Create or enter a Cloud ID first'); return; }
-            const ok = await cloudPush();
-            showSyncToast(ok ? 'Uploaded to cloud!' : 'Cloud upload failed');
+            const result = await cloudPush();
+            if (result.ok) {
+                showSyncToast('Uploaded to cloud!');
+            } else if (result.reason === 'http-404') {
+                // Cloud ID expired or deleted — auto-create new one
+                showSyncToast('Cloud ID expired. Creating new one...');
+                await createNewCloud();
+            } else if (result.reason === 'network') {
+                showSyncToast('No internet connection');
+            } else {
+                showSyncToast('Upload failed (error ' + result.reason + '). Try Create New Cloud ID.');
+            }
         }
 
         async function doCloudPull() {
@@ -3324,7 +3334,8 @@
                     const localTime = localStorage.getItem('salaryApp_lastModified') || '1970-01-01';
                     const serverTime = sd.lastModified || '1970-01-01';
                     if (!sd.data || Object.keys(sd.data).length === 0) {
-                        await cloudPush();
+                        const pushResult = await cloudPush();
+                        if (!pushResult.ok) console.warn('cloudAutoSync push failed:', pushResult.reason);
                     } else if (new Date(serverTime) > new Date(localTime)) {
                         setAllLocalData(sd);
                         applyNames();
@@ -3332,13 +3343,15 @@
                         setSyncStatus('synced');
                         showSyncToast('Synced from cloud!');
                     } else {
-                        await cloudPush();
-                        setSyncStatus('synced');
+                        const pushResult = await cloudPush();
+                        if (pushResult.ok) setSyncStatus('synced');
                     }
                     setCloudStatus('Cloud connected', 'ok');
                 } else if (res.status === 404) {
-                    setCloudStatus('Cloud ID not found — create a new one', 'err');
+                    setCloudStatus('Cloud ID not found — creating new one...', 'err');
                     setSyncStatus('offline');
+                    // Auto-recreate cloud with current data
+                    await createNewCloud();
                 }
             } catch (e) {
                 setSyncStatus('offline');
