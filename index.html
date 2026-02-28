@@ -1594,7 +1594,6 @@
                     <div class="panel-tools">
                         <button class="btn btn-warning btn-sm" onclick="openFixedModal()">+ Add Fixed Expense</button>
                             <button class="btn btn-ghost btn-sm" onclick="applyFixedToCurrentMonth()">🔄 Re-apply to This Month</button>
-                            <button class="btn btn-primary btn-sm" onclick="applyDefaultsToCurrentMonth()">✨ Apply Defaults</button>
                     </div>
                 </div>
                 <div class="panel-body" style="padding:20px;">
@@ -1740,11 +1739,6 @@
                     <input type="text" id="fixedDesc" placeholder="e.g. Rent, Electric bill, Phone bill...">
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Estimated Amount (฿) <span style="font-weight:400; color:var(--text-light); font-size:0.75rem;">— optional, can set later</span></label>
-                        <input type="number" id="fixedAmount" placeholder="Leave blank if unknown" min="0" step="1">
-                        <div style="font-size:0.7rem; color:var(--text-light); margin-top:4px;">💡 Don't know the amount yet? Leave it blank — you can enter the actual amount from the Pay List when the bill arrives.</div>
-                    </div>
                     <div class="form-group">
                         <label>Paid By</label>
                         <select id="fixedPaidBy">
@@ -2146,52 +2140,9 @@
             saveCC();
         }
 
-        // Apply default/template amounts to the current month for fixed expenses
-        // and credit-card bills. This sets overrides so the displayed month shows
-        // the values and preserves original templates separately.
-        function applyDefaultsToCurrentMonth() {
-            if (!confirm('Apply template/default amounts to the current month? This will set amounts for fixed expenses and credit-card bills for this month.')) return;
-            const key = currentKey();
-            if (!data[key]) data[key] = { salary1: 0, salary2: 0, expenses: [] };
-
-            // Ensure month has the fixed/cc placeholders
-            syncFixedExpenses(key, false);
-            syncCreditCards(key, false);
-
-            const md = data[key];
-
-            // Apply fixed defaults by setting amountOverride on month entries
-            md.expenses.filter(e => e.isFixed).forEach(e => {
-                const fe = fixedExpenses[e.fixedId];
-                if (fe) {
-                    e.amount = fe.amount;
-                    e.amountOverride = fe.amount;
-                    e.paid = false;
-                }
-            });
-
-            // For credit cards, set monthlyBills on each card to the most recent
-            // known amount (if any) or leave as-is.
-            creditCards.forEach(card => {
-                if (!card.monthlyBills) card.monthlyBills = {};
-                // find most recent positive bill amount
-                let lastAmount = 0;
-                Object.keys(card.monthlyBills || {}).sort().reverse().forEach(k => {
-                    const b = card.monthlyBills[k];
-                    if (b && b.amount && b.amount > 0 && lastAmount === 0) lastAmount = b.amount;
-                });
-                if (lastAmount > 0) {
-                    card.monthlyBills[key] = { amount: lastAmount, paid: false };
-                }
-            });
-
-            // Re-sync month lists and save
-            syncFixedExpenses(key, false);
-            syncCreditCards(key, false);
-            saveAll();
-            renderAll();
-            showToast('Defaults applied to this month', 'success');
-        }
+        // NOTE: applyDefaultsToCurrentMonth removed — default amounts are not
+        // required on fixed templates. Use the Re-apply button to ensure fixed
+        // templates are present in the current month.
 
         function updateLastModified() {
             localStorage.setItem('salaryApp_lastModified', new Date().toISOString());
@@ -2885,7 +2836,8 @@
 
         function saveFixedExpense() {
             const desc = document.getElementById('fixedDesc').value.trim();
-            const amount = parseFloat(document.getElementById('fixedAmount').value) || 0;
+            // Fixed expenses no longer require an estimated amount at creation.
+            const amount = 0;
             const paidBy = document.getElementById('fixedPaidBy').value;
             const category = document.getElementById('fixedCategory').value.trim() || 'Other';
             const note = document.getElementById('fixedNote').value.trim();
@@ -2912,7 +2864,7 @@
 
         function deleteFixedExpense(index) {
             const fe = fixedExpenses[index];
-            if (confirm(`Remove fixed expense "${fe.desc}" (${fmt(fe.amount)})?`)) {
+            if (confirm(`Remove fixed expense "${fe.desc}"?`)) {
                 fixedExpenses.splice(index, 1);
                 saveFixed();
                 // Sync to current month immediately
@@ -2935,8 +2887,8 @@
             }
             empty.style.display = 'none';
 
-            const total = fixedExpenses.reduce((s, fe) => s + fe.amount, 0);
-            totalEl.textContent = fmt(total);
+            // Amounts are no longer required on fixed templates; show template info only.
+            totalEl.textContent = fmt(fixedExpenses.reduce((s, fe) => s + (fe.amount || 0), 0));
 
             container.innerHTML = fixedExpenses.map((fe, i) => {
                 const catIcon = CATEGORIES.find(c => c.name === fe.category)?.icon || '📌';
@@ -2951,11 +2903,6 @@
                             <span class="person-tag ${paidClass}">${paidLabel}</span>
                             ${fe.note ? `<span style="color:var(--text-light)">${fe.note}</span>` : ''}
                         </div>
-                    </div>
-                    <div class="fc-amount">
-                        ${fe.amount > 0 
-                            ? `<div>${fmt(fe.amount)}</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">default estimate</div>` 
-                            : `<div style="color:var(--warning); font-size:0.85rem;">❓ TBD</div><div style="font-size:0.65rem; color:var(--text-light); font-weight:500;">set in pay list</div>`}
                     </div>
                     <div style="display:flex; gap:4px;">
                         <button class="btn-icon" onclick="openFixedModal(${i})" title="Edit">✏️</button>
