@@ -2071,7 +2071,9 @@
             fixedExpenses.forEach((fe, idx) => {
                 const saved = stateMap[idx] || {};
                 const hasOverride = saved.amountOverride !== null && saved.amountOverride !== undefined;
-                const amountVal = hasOverride ? saved.amountOverride : (isNewMonth ? 0 : fe.amount);
+                // Always default to 0 unless the user previously set an override
+                // for this month. Do NOT prefill with the template `fe.amount`.
+                const amountVal = hasOverride ? saved.amountOverride : 0;
                 md.expenses.unshift({
                     date: saved.date || dateStr,
                     amount: amountVal,
