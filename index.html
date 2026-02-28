@@ -3893,13 +3893,8 @@
                 setTimeout(() => { try { if (typeof cloudPull === 'function') cloudPull(); } catch (e) {} }, 300);
             }, 500);
 
-            // If no fixed expenses present locally, try restoring once from bundled cloud-data.json
-            try {
-                if (!fixedExpenses || fixedExpenses.length === 0) {
-                    // Force restore fixed lists from bundled backup now
-                    restoreAllFromCloudData().catch(() => {});
-                }
-            } catch (e) { console.warn('Restore check failed', e); }
+            // Auto-restore disabled to avoid accidental overwriting of user data on page load.
+            // To restore from the bundled `cloud-data.json`, run `restoreAllFromCloudData()` manually.
         }
 
         init();
