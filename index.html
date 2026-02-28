@@ -1593,7 +1593,8 @@
                     <h2>📌 Manage Fixed Monthly Expenses</h2>
                     <div class="panel-tools">
                         <button class="btn btn-warning btn-sm" onclick="openFixedModal()">+ Add Fixed Expense</button>
-                        <button class="btn btn-ghost btn-sm" onclick="applyFixedToCurrentMonth()">🔄 Re-apply to This Month</button>
+                            <button class="btn btn-ghost btn-sm" onclick="applyFixedToCurrentMonth()">🔄 Re-apply to This Month</button>
+                            <button class="btn btn-primary btn-sm" onclick="applyDefaultsToCurrentMonth()">✨ Apply Defaults</button>
                     </div>
                 </div>
                 <div class="panel-body" style="padding:20px;">
@@ -2143,6 +2144,53 @@
             bill.paid = !!expense.paid;
             bill.amount = expense.amount;
             saveCC();
+        }
+
+        // Apply default/template amounts to the current month for fixed expenses
+        // and credit-card bills. This sets overrides so the displayed month shows
+        // the values and preserves original templates separately.
+        function applyDefaultsToCurrentMonth() {
+            if (!confirm('Apply template/default amounts to the current month? This will set amounts for fixed expenses and credit-card bills for this month.')) return;
+            const key = currentKey();
+            if (!data[key]) data[key] = { salary1: 0, salary2: 0, expenses: [] };
+
+            // Ensure month has the fixed/cc placeholders
+            syncFixedExpenses(key, false);
+            syncCreditCards(key, false);
+
+            const md = data[key];
+
+            // Apply fixed defaults by setting amountOverride on month entries
+            md.expenses.filter(e => e.isFixed).forEach(e => {
+                const fe = fixedExpenses[e.fixedId];
+                if (fe) {
+                    e.amount = fe.amount;
+                    e.amountOverride = fe.amount;
+                    e.paid = false;
+                }
+            });
+
+            // For credit cards, set monthlyBills on each card to the most recent
+            // known amount (if any) or leave as-is.
+            creditCards.forEach(card => {
+                if (!card.monthlyBills) card.monthlyBills = {};
+                // find most recent positive bill amount
+                let lastAmount = 0;
+                Object.keys(card.monthlyBills || {}).sort().reverse().forEach(k => {
+                    const b = card.monthlyBills[k];
+                    if (b && b.amount && b.amount > 0 && lastAmount === 0) lastAmount = b.amount;
+                });
+                if (lastAmount > 0) {
+                    card.monthlyBills[key] = { amount: lastAmount, paid: false };
+                }
+            });
+
+            // Re-sync month lists and save
+            syncFixedExpenses(key, false);
+            syncCreditCards(key, false);
+            saveAll();
+            renderAll();
+            showToast('Defaults applied to this month', 'success');
         }
 
         function updateLastModified() {
