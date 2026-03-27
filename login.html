@@ -299,15 +299,11 @@
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const btnText = document.getElementById('btnText');
         const errorMessage = document.getElementById('errorMessage');
-
-        // Detect Android specifically (redirect only works reliably on Android Chrome)
-        const ua = navigator.userAgent || '';
-        const isAndroid = /Android/i.test(ua);
-        const isEmbeddedBrowser = /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
-        // Use redirect ONLY for Android or embedded browsers; everything else uses popup
-        const useRedirect = isAndroid || isEmbeddedBrowser;
+        let loginDone = false;
 
         function goToApp(user) {
+            if (loginDone) return;
+            loginDone = true;
             localStorage.setItem('user_uid', user.uid);
             localStorage.setItem('user_email', user.email);
             localStorage.setItem('user_name', user.displayName || '');
@@ -323,13 +319,6 @@
             googleLoginBtn.classList.remove('loading');
         }
 
-        function showStatus(msg) {
-            errorMessage.style.display = 'block';
-            errorMessage.style.background = '#e0e7ff';
-            errorMessage.style.color = '#3730a3';
-            errorMessage.textContent = msg;
-        }
-
         // Did user arrive from logout?
         const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
         if (cameFromLogout) {
@@ -337,21 +326,46 @@
             auth.signOut().catch(() => {});
         }
 
-        // Handle redirect return (Android flow comes back here)
+        // ALWAYS listen for auth state — this is the most reliable way
+        // It fires when: page loads with existing session, redirect completes, popup completes,
+        // or user comes back to this tab after auth completed in another tab
+        auth.onAuthStateChanged((user) => {
+            if (user && !cameFromLogout) {
+                goToApp(user);
+            }
+        });
+
+        // Also handle redirect result explicitly (for Android)
         auth.getRedirectResult().then((result) => {
             if (result && result.user) {
                 goToApp(result.user);
             }
-        }).catch((error) => {
-            if (error.code) {
-                showError('Login error: ' + error.message);
+        }).catch(() => {});
+
+        // CRITICAL for mobile Safari: when user completes auth in another tab and comes back,
+        // the page may have been suspended. This re-checks auth when the tab becomes visible.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && !loginDone && !cameFromLogout) {
+                // Force Firebase to re-check the auth state
+                const user = auth.currentUser;
+                if (user) {
+                    goToApp(user);
+                } else {
+                    // Auth state might not be ready yet, reload to re-trigger onAuthStateChanged
+                    auth.onAuthStateChanged((u) => {
+                        if (u) goToApp(u);
+                    });
+                }
             }
         });
 
-        // If user already has a session and not from logout, go to app
-        auth.onAuthStateChanged((user) => {
-            if (user && !cameFromLogout) {
-                goToApp(user);
+        // Also re-check on window focus (some browsers fire this but not visibilitychange)
+        window.addEventListener('focus', () => {
+            if (!loginDone && !cameFromLogout) {
+                const user = auth.currentUser;
+                if (user) {
+                    goToApp(user);
+                }
             }
         });
 
@@ -363,35 +377,28 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
 
-            if (useRedirect) {
-                // ANDROID / EMBEDDED: Use redirect
-                showStatus('Redirecting to Google...');
-                auth.signInWithRedirect(provider).catch((error) => {
+            // Try popup first on all platforms — it's the most direct method
+            auth.signInWithPopup(provider).then((result) => {
+                goToApp(result.user);
+            }).catch((error) => {
+                console.error('Login error:', error);
+
+                // If popup fails, try redirect as fallback
+                if (error.code === 'auth/popup-blocked' ||
+                    error.code === 'auth/disallowed-useragent' ||
+                    error.code === 'auth/operation-not-supported-in-this-environment') {
+                    // Popup not available — use redirect
+                    auth.signInWithRedirect(provider).catch((e) => {
+                        showError('Error: ' + e.message);
+                    });
+                } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                    showError('Login cancelled. Please try again.');
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    showError('Domain not authorized in Firebase Console.');
+                } else {
                     showError('Error: ' + error.message);
-                });
-            } else {
-                // DESKTOP + iPHONE/iPAD: Use popup (works on Safari, Chrome, etc.)
-                auth.signInWithPopup(provider).then((result) => {
-                    goToApp(result.user);
-                }).catch((error) => {
-                    console.error('Login error:', error);
-                    if (error.code === 'auth/popup-blocked') {
-                        showError('Pop-up blocked by browser. Please allow pop-ups for this site and try again.');
-                    } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                        showError('Login cancelled. Please try again.');
-                    } else if (error.code === 'auth/unauthorized-domain') {
-                        showError('Domain not authorized in Firebase Console.');
-                    } else if (error.code === 'auth/disallowed-useragent') {
-                        // Fallback to redirect for blocked user agents
-                        showStatus('Redirecting to Google...');
-                        auth.signInWithRedirect(provider).catch(() => {
-                            showError('Please open this page in Safari or Chrome directly.');
-                        });
-                    } else {
-                        showError('Error: ' + error.message);
-                    }
-                });
-            }
+                }
+            });
         });
     </script>
 </body>
