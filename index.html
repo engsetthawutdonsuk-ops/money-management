@@ -463,8 +463,8 @@
             margin-top: 8px;
         }
         .summary-item .s-person-explain {
-            font-size: 0.68rem;
-            line-height: 1.4;
+            font-size: 0.76rem;
+            line-height: 1.5;
             color: var(--text-light);
         }
         .s-person-explain b { color: var(--text); }
@@ -1756,13 +1756,13 @@
             </div>
             <button class="btn btn-outline btn-sm" onclick="exportToExcel()">📤 Export</button>
             <div class="sync-wrapper">
-                <button class="btn btn-outline btn-sm sync-btn" onclick="toggleSyncMenu()" title="Sync data between devices">
-                    ☁️ Sync <span class="sync-dot" id="syncDot"></span>
+                <button class="btn btn-outline btn-sm sync-btn" onclick="toggleSyncMenu()" title="Back up & sync your data to the cloud">
+                    ☁️ Backup <span class="sync-dot" id="syncDot"></span>
                 </button>
                 <div class="sync-menu" id="syncMenu">
-                    <div class="sync-menu-title">☁️ Sync</div>
+                    <div class="sync-menu-title">☁️ Cloud Backup</div>
                     <div class="sync-cloud-status" id="cloudStatus"></div>
-                    <button onclick="doSyncNow()">⚡ Sync Now</button>
+                    <button onclick="doSyncNow()">⚡ Save & Sync Now</button>
                     <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Share Link</button>
                     <div class="sync-menu-sub">One action to save your changes and get the latest updates.</div>
                     <div class="sync-menu-divider"></div>
@@ -1779,7 +1779,7 @@
         <div class="drawer-backdrop" onclick="toggleDrawer()"></div>
         <div class="drawer-panel">
             <div class="drawer-title">
-                <span>⚙️ Menu</span>
+                <span>📋 Menu</span>
                 <button class="drawer-close" onclick="toggleDrawer()">✕</button>
             </div>
             <div class="month-nav">
@@ -1793,7 +1793,7 @@
                     <input type="file" id="drawerImportFile" accept=".xlsx,.xls,.csv">
                 </div>
                 <button class="btn btn-ghost btn-sm" onclick="exportToExcel();toggleDrawer()" style="width:100%;justify-content:flex-start">📤 Export Data</button>
-                <button class="btn btn-ghost btn-sm" onclick="toggleSyncMenu();toggleDrawer()" style="width:100%;justify-content:flex-start">☁️ Sync Data</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleSyncMenu();toggleDrawer()" style="width:100%;justify-content:flex-start">☁️ Cloud Backup</button>
             </div>
             <div class="drawer-section">
                 <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
@@ -1806,11 +1806,11 @@
         <div class="bottom-tab-bar-inner">
             <button class="btab active" data-tab="paylist" onclick="switchTabFromBar(this)">
                 <span class="btab-icon">📝</span>
-                Pay List
+                Expenses
             </button>
             <button class="btab" data-tab="fixed" onclick="switchTabFromBar(this)">
                 <span class="btab-icon">📌</span>
-                Fixed
+                Bills
             </button>
             <button class="btab" data-tab="creditcards" onclick="switchTabFromBar(this)">
                 <span class="btab-icon">💳</span>
@@ -1906,12 +1906,12 @@
                 <div class="s-value" id="sumBalance">฿0 <span class="s-half" id="sumBalHalf">÷2 = ฿0 / person</span></div>
             </div>
             <div class="summary-item savings">
-                <div class="s-label">Balance Rate</div>
+                <div class="s-label">Savings %</div>
                 <div class="s-value" id="sumSavings">0%</div>
                 <div class="s-sub">Of total income</div>
             </div>
             <div class="summary-item saving-target">
-                <div class="s-label">Saving</div>
+                <div class="s-label">Savings Goal</div>
                 <div class="s-value" id="sumSavingAmt">฿0</div>
                 <div class="s-sub" id="sumSavingRate">0% of income</div>
             </div>
@@ -1951,8 +1951,8 @@
 
         <!-- TABS -->
         <div class="tabs">
-            <button class="tab active" data-tab="paylist">📝 Pay List</button>
-            <button class="tab" data-tab="fixed">📌 Fixed</button>
+            <button class="tab active" data-tab="paylist">📝 Expenses</button>
+            <button class="tab" data-tab="fixed">📌 Bills</button>
             <button class="tab" data-tab="creditcards">💳 Credit Cards</button>
             <button class="tab" data-tab="charts">📊 Charts</button>
             <button class="tab" data-tab="monthly">📅 History</button>
@@ -1969,7 +1969,7 @@
 
             <div class="panel">
                 <div class="panel-header">
-                    <h2>💳 Monthly Expenses</h2>
+                    <h2>� Monthly Expenses</h2>
                     <div class="panel-tools">
                         <input type="text" class="search-box" id="searchInput"
                                placeholder="🔍 Search..." style="padding:6px 12px; border:2px solid var(--border); border-radius:8px; font-size:0.78rem; outline:none; width:150px;">
@@ -1981,8 +1981,8 @@
                     <button class="filter-pill active" data-filter="all" onclick="filterExpenses('all',this)">All</button>
                     <button class="filter-pill" data-filter="unpaid" onclick="filterExpenses('unpaid',this)">⏳ Unpaid</button>
                     <button class="filter-pill" data-filter="paid" onclick="filterExpenses('paid',this)">✅ Paid</button>
-                    <button class="filter-pill" data-filter="fixed" onclick="filterExpenses('fixed',this)">📌 Fixed</button>
-                    <button class="filter-pill" data-filter="creditcard" onclick="filterExpenses('creditcard',this)">💳 Credit Card</button>
+                    <button class="filter-pill" data-filter="fixed" onclick="filterExpenses('fixed',this)" title="Recurring monthly bills like rent, internet, etc.">📌 Recurring</button>
+                    <button class="filter-pill" data-filter="creditcard" onclick="filterExpenses('creditcard',this)" title="Credit card bill payments">💳 Credit Card</button>
                 </div>
                 <div class="panel-body">
                     <div class="expense-list" id="expenseListContainer"></div>
@@ -2014,26 +2014,26 @@
         <div class="tab-content" id="tab-fixed">
             <div class="fixed-summary-bar">
                 <div>
-                    <div class="fs-label">📌 Total Fixed Expenses per Month</div>
+                    <div class="fs-label">📌 Total Recurring Bills per Month</div>
                     <div class="fs-value" id="fixedTotal">฿0</div>
                 </div>
                 <div style="margin-left:auto; font-size:0.78rem; color:#92400e;">
-                    These expenses are auto-added to every new month
+                    These bills are automatically added to every new month
                 </div>
             </div>
             <div class="panel">
                 <div class="panel-header">
-                    <h2>📌 Manage Fixed Monthly Expenses</h2>
+                    <h2>📌 Recurring Monthly Bills</h2>
                     <div class="panel-tools">
-                        <button class="btn btn-warning btn-sm" onclick="openFixedModal()">+ Add Fixed Expense</button>
-                            <button class="btn btn-ghost btn-sm" onclick="applyFixedToCurrentMonth()">🔄 Re-apply to This Month</button>
+                        <button class="btn btn-warning btn-sm" onclick="openFixedModal()">+ Add Recurring Bill</button>
+                            <button class="btn btn-ghost btn-sm" onclick="applyFixedToCurrentMonth()" title="Refresh this month's bill list with your saved recurring bills">🔄 Refresh Bills</button>
                     </div>
                 </div>
                 <div class="panel-body" style="padding:20px;">
                     <div class="fixed-cards-grid" id="fixedCardsContainer"></div>
                     <div class="empty-state" id="fixedEmpty" style="display:none;">
                         <div class="icon">📌</div>
-                        <p>No fixed expenses set up yet.<br>Add bills that repeat every month like <strong>rent, internet, phone, insurance</strong>, etc.</p>
+                        <p>No recurring bills set up yet.<br>Add bills that repeat every month like <strong>rent, internet, phone, insurance</strong>, etc.</p>
                     </div>
                 </div>
             </div>
@@ -2163,7 +2163,7 @@
     <div class="modal-overlay" id="fixedModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="fixedModalTitle">Add Fixed Expense</h3>
+                <h3 id="fixedModalTitle">Add Recurring Bill</h3>
                 <button class="btn-icon" onclick="closeFixedModal()" style="font-size:1.15rem;">✕</button>
             </div>
             <div class="modal-body">
@@ -2177,7 +2177,7 @@
                         <select id="fixedPaidBy">
                             <option value="person1">Person 1</option>
                             <option value="person2">Person 2</option>
-                            <option value="shared">Shared / Split</option>
+                            <option value="shared">Shared (Split 50/50)</option>
                         </select>
                     </div>
                 </div>
@@ -2232,7 +2232,7 @@
                         <select id="expPaidBy">
                             <option value="person1">Person 1</option>
                             <option value="person2">Person 2</option>
-                            <option value="shared">Shared / Split</option>
+                            <option value="shared">Shared (Split 50/50)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -2259,7 +2259,7 @@
             <div class="modal-body">
                 <div class="amount-update-info">
                     <div class="au-desc" id="amountUpdateDesc">Electricity</div>
-                    <div class="au-default">Default estimate: <strong id="amountUpdateDefault">฿0</strong></div>
+                    <div class="au-default">Usual amount: <strong id="amountUpdateDefault">฿0</strong></div>
                 </div>
                 <div class="form-group">
                     <label>Actual Amount (฿) — from receipt/bill</label>
@@ -2268,11 +2268,11 @@
                 </div>
                 <input type="hidden" id="amountUpdateIndex" value="-1">
                 <div style="font-size:0.75rem; color:var(--text-light); text-align:center; margin-top:4px;">
-                    This updates the amount for <strong>this month only</strong>. The default estimate stays the same for future months.
+                    This changes the amount for <strong>this month only</strong>. Your usual amount stays the same for future months.
                 </div>
             </div>
             <div class="modal-footer" style="justify-content:space-between;">
-                <button class="btn btn-ghost btn-sm" onclick="resetAmountToDefault()" style="font-size:0.75rem;">↩️ Reset to Default</button>
+                <button class="btn btn-ghost btn-sm" onclick="resetAmountToDefault()" style="font-size:0.75rem;" title="Go back to your usual monthly amount">↩️ Use Usual Amount</button>
                 <div style="display:flex; gap:8px;">
                     <button class="btn btn-ghost" onclick="closeAmountUpdate()">Cancel</button>
                     <button class="btn btn-warning" onclick="saveAmountUpdate()">💰 Update Amount</button>
@@ -2305,7 +2305,7 @@
                     <select id="ccOwner">
                         <option value="person1">Person 1</option>
                         <option value="person2">Person 2</option>
-                        <option value="shared">Shared</option>
+                        <option value="shared">Shared (Split 50/50)</option>
                     </select>
                 </div>
                 <input type="hidden" id="editCardIndex" value="-1">
@@ -2333,7 +2333,7 @@
                 <input type="hidden" id="ccBillCardIdx" value="-1">
             </div>
             <div class="modal-footer">
-                        <button class="btn btn-ghost" onclick="resetCCBill()">Reset to Default</button>
+                        <button class="btn btn-ghost" onclick="resetCCBill()" title="Clear the bill amount for this month">Clear Amount</button>
                         <button class="btn btn-ghost" onclick="closeCCBillModal()">Cancel</button>
                         <button class="btn btn-primary" onclick="saveCCBill()">💰 Save Amount</button>
             </div>
@@ -2881,7 +2881,7 @@
         function renderExpenseRow(e, md) {
             const origIdx = md.expenses.indexOf(e);
             const paidClass = e.paidBy === 'person1' ? 'p1' : e.paidBy === 'person2' ? 'p2' : 'shared';
-            const paidLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared';
+            const paidLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared 50/50';
             const catIcon = CATEGORIES.find(c => c.name === e.category)?.icon || '📌';
             const isPaid = !!e.paid;
             const isCCItem = !!e.isCreditCard;
@@ -2895,21 +2895,21 @@
             // Amount section
             let amtHtml = '', amtSub = '';
             if (isCCItem && e.amount === 0) {
-                amtHtml = `<div class="tbd-pill">❓ TBD</div><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</button></div>`;
+                amtHtml = `<div class="tbd-pill">❓ Pending</div><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Set</button></div>`;
             } else if (isCCItem && e.amount > 0) {
                 amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span><div style="margin-top:6px;"><button class="amount-set-btn" onclick="openCCBillFromList(${origIdx})">💰 Update</button></div>`;
             } else if (needsAmt) {
-                amtHtml = `<div class="tbd-pill">❓ TBD</div><div><span class="amount-set-btn" onclick="openAmountUpdate(${origIdx})">💰 Set</span></div>`;
+                amtHtml = `<div class="tbd-pill">❓ Pending</div><div><span class="amount-set-btn" onclick="openAmountUpdate(${origIdx})">💰 Set</span></div>`;
             } else if (e.isFixed && e.amountOverride !== null && e.amountOverride !== undefined) {
                 amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span>`;
                 if (e.defaultAmount && e.defaultAmount > 0 && e.amountOverride !== e.defaultAmount) {
-                    amtSub = `<span class="ec-amount-sub" style="color:var(--text-light); text-decoration:line-through;">est.${fmt(e.defaultAmount)}</span>`;
+                    amtSub = `<span class="ec-amount-sub" style="color:var(--text-light); text-decoration:line-through;">was ${fmt(e.defaultAmount)}</span>`;
                 } else {
                     amtSub = `<span class="ec-amount-sub" style="color:var(--success);">✅ Actual</span>`;
                 }
             } else if (e.isFixed && e.amount > 0) {
                 amtHtml = `<span class="ec-amount-val" style="color:var(--warning);">${fmt(e.amount)}</span>`;
-                amtSub = `<span class="ec-amount-sub" style="color:var(--warning);">⏳ Est.</span>`;
+                amtSub = `<span class="ec-amount-sub" style="color:var(--warning);">⏳ Estimate</span>`;
             } else {
                 amtHtml = `<span class="ec-amount-val">${fmt(e.amount)}</span>`;
             }
@@ -2923,7 +2923,7 @@
             // same fixed-card layout to match Fixed Expenses UI.
             if (isCCItem) {
                 const cardIdx = e.ccCardIdx;
-                const ownerLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared';
+                const ownerLabel = e.paidBy === 'person1' ? settings.person1 : e.paidBy === 'person2' ? settings.person2 : 'Shared 50/50';
                 const paidClassTag = e.paidBy === 'person1' ? 'p1' : e.paidBy === 'person2' ? 'p2' : 'shared';
                 return `<div class="fixed-card ${isPaid ? 'is-paid' : ''} ${needsAmt ? 'needs-amount' : ''}">
                     <div class="ec-check ${isPaid ? 'checked' : ''}" onclick="togglePaid(${origIdx})">${isPaid ? '✓' : ''}</div>
@@ -3030,7 +3030,7 @@
             });
 
             let html = '';
-            html += renderSection('fixed', '📌', 'Fixed Expenses', fixedItems, md, 'fixed');
+            html += renderSection('fixed', '📌', 'Recurring Bills', fixedItems, md, 'fixed');
             // Also include credit card bills in the pay-list so users can set/update per-month amounts
             html += renderSection('cc', '💳', 'Credit Card Bills', ccItems, md, 'cc');
 
@@ -3147,7 +3147,7 @@
             saveAll();
             closeAmountUpdate();
             renderAll();
-            showToast(`"${e.desc}" reset to default amount`, 'success');
+            showToast(`"${e.desc}" changed back to usual amount`, 'success');
         }
 
         // ========== EXPENSE CRUD ==========
@@ -3349,7 +3349,7 @@
 
             container.innerHTML = fixedExpenses.map((fe, i) => {
                 const catIcon = CATEGORIES.find(c => c.name === fe.category)?.icon || '📌';
-                const paidLabel = fe.paidBy === 'person1' ? settings.person1 : fe.paidBy === 'person2' ? settings.person2 : 'Shared';
+                const paidLabel = fe.paidBy === 'person1' ? settings.person1 : fe.paidBy === 'person2' ? settings.person2 : 'Shared 50/50';
                 const paidClass = fe.paidBy === 'person1' ? 'p1' : fe.paidBy === 'person2' ? 'p2' : 'shared';
 
                 return `<div class="fixed-card">
@@ -3372,7 +3372,7 @@
         function applyFixedToCurrentMonth() {
             syncFixedExpenses(currentKey());
             renderAll();
-            showToast(`Fixed expenses synced to this month (${fixedExpenses.length} items)`, 'success');
+            showToast(`Recurring bills refreshed for this month (${fixedExpenses.length} items)`, 'success');
         }
 
         // ========== CHARTS ==========
@@ -4552,7 +4552,7 @@
             closeCCBillModal();
             renderCreditCards();
             renderAll();
-            showToast('Reset to default (TBD) for this card', 'success');
+            showToast('Bill amount cleared — set it when your statement arrives', 'success');
         }
 
         function openCCBillFromList(expIdx) {
