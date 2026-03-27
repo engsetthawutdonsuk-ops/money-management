@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>�‍❤️‍👨 Money Management - Login</title>
+    <title>Money Management - Login</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -126,28 +126,80 @@
         }
 
         .logo-section {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
-        .logo-icon {
-            font-size: 3.5rem;
-            margin-bottom: 12px;
+        /* Couple illustration */
+        .couple-icon {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 16px;
+            position: relative;
+            height: 80px;
+        }
+        .couple-icon .person {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .couple-icon .person.him {
+            background: var(--gradient-1);
+            transform: translateX(8px);
+        }
+        .couple-icon .person.her {
+            background: var(--gradient-2);
+            transform: translateX(-8px);
+        }
+        .couple-icon .heart-center {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+        }
+        .couple-icon .heart-center svg {
+            filter: drop-shadow(0 2px 6px rgba(236, 72, 153, 0.4));
+            animation: heartPulse 2s ease-in-out infinite;
+        }
+        @keyframes heartPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
         }
 
         .logo-text h1 {
-            font-size: 1.8rem;
+            font-size: 1.7rem;
             font-weight: 800;
             background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
         }
 
         .logo-text p {
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             color: var(--text-light);
-            margin-bottom: 20px;
+            margin-bottom: 0;
+        }
+
+        .tagline {
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
         }
 
         .divider {
@@ -158,9 +210,9 @@
 
         .login-description {
             color: var(--text-light);
-            font-size: 0.95rem;
-            margin-bottom: 28px;
-            line-height: 1.5;
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+            line-height: 1.6;
         }
 
         .google-login-btn {
@@ -269,16 +321,18 @@
 
         /* ===== DEVICE-ADAPTIVE STYLES ===== */
 
-        /* Phone: tighter padding, bigger touch targets */
+        /* Phone */
         @media (max-width: 480px) {
             .login-container { padding: 12px; }
             .login-card { padding: 32px 20px; }
-            .logo-icon { font-size: 2.8rem; }
-            .logo-text h1 { font-size: 1.5rem; }
-            .logo-text p { font-size: 0.88rem; }
-            .login-description { font-size: 0.88rem; margin-bottom: 24px; }
+            .couple-icon { height: 70px; }
+            .couple-icon .person { width: 32px; height: 32px; font-size: 1rem; }
+            .couple-icon .heart-center svg { width: 32px; height: 32px; }
+            .logo-text h1 { font-size: 1.4rem; }
+            .logo-text p { font-size: 0.85rem; }
+            .login-description { font-size: 0.82rem; margin-bottom: 20px; }
             .google-login-btn { padding: 16px 20px; font-size: 1rem; min-height: 52px; }
-            .footer-text { font-size: 0.78rem; }
+            .footer-text { font-size: 0.75rem; }
         }
 
         /* Tablet: centered card, wider */
@@ -317,10 +371,20 @@
     <div class="login-container">
         <div class="login-card">
             <div class="logo-section">
-                <div class="logo-icon">�‍❤️‍👨</div>
+                <div class="couple-icon">
+                    <div class="heart-center">
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#heartGrad)"/>
+                            <defs><linearGradient id="heartGrad" x1="2" y1="3" x2="22" y2="21"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#f43f5e"/></linearGradient></defs>
+                        </svg>
+                    </div>
+                    <div class="person him">J</div>
+                    <div class="person her">B</div>
+                </div>
                 <div class="logo-text">
                     <h1>Money Management</h1>
                     <p>Track spending together</p>
+                    <div class="tagline">For couples who share life &amp; finances</div>
                 </div>
             </div>
 
