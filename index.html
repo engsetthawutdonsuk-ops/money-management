@@ -443,30 +443,50 @@
         .summary-item .s-person-sub {
             font-size: 0.72rem; color: var(--text-light); font-weight: 600;
         }
-        .summary-item .s-person-settle {
-            display: inline-block;
-            padding: 3px 12px;
-            border-radius: 12px;
+        .s-person-paid {
             font-size: 0.72rem;
-            font-weight: 700;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .summary-item .s-person-settle.owes { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-        .summary-item .s-person-settle.gets { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-        .summary-item .s-person-settle.even { background: #f8fafc; color: var(--text-light); border: 1px solid #e5e7eb; }
-        .summary-item .s-settle-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        .summary-item .s-person-explain {
-            font-size: 0.76rem;
-            line-height: 1.5;
             color: var(--text-light);
+            margin-top: 6px;
         }
-        .s-person-explain b { color: var(--text); }
+        .s-person-paid b { color: var(--text); }
+
+        /* ===== SETTLEMENT BANNER ===== */
+        .settle-banner {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .settle-banner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #a78bfa);
+        }
+        .settle-banner.owes::before {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+        }
+        .settle-banner.even::before {
+            background: linear-gradient(90deg, #22c55e, #10b981);
+        }
+        .settle-main {
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .settle-banner.owes .settle-main { color: var(--danger); }
+        .settle-banner.even .settle-main { color: #16a34a; }
+        .settle-detail {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+        .settle-detail b { color: var(--text); }
 
         .summary-item .s-half {
             display: inline-block;
@@ -1346,8 +1366,9 @@
             .summary-item .s-half { font-size: 0.72rem; padding: 3px 7px; }
             /* Person row: single column */
             .person-row { grid-template-columns: 1fr; gap: 6px; }
-            .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
             .summary-item .s-person-val { font-size: 1.1rem; }
+            .settle-banner { padding: 12px 14px; }
+            .settle-main { font-size: 0.95rem; }
             /* Salary: single column */
             .salary-section { grid-template-columns: 1fr; }
             /* Settings: stack */
@@ -1428,7 +1449,6 @@
             /* Summary: 2 columns */
             .summary-strip { grid-template-columns: repeat(3, 1fr); }
             .person-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
             /* Charts */
             .charts-grid { grid-template-columns: 1fr; }
             /* Tabs: scrollable */
@@ -1715,10 +1735,7 @@
                     <div class="s-person-val" id="pbRemain1">฿0</div>
                     <div class="s-person-sub" id="pbRemainPct1">Remaining</div>
                 </div>
-                <div class="s-settle-row">
-                    <div class="s-person-settle even" id="pbSettle1">All settled ✓</div>
-                    <div class="s-person-explain" id="pbExplain1"></div>
-                </div>
+                <div class="s-person-paid" id="pbPaid1"></div>
             </div>
             <div class="summary-item person2" id="pbCard2">
                 <div class="s-person-header">
@@ -1729,11 +1746,14 @@
                     <div class="s-person-val" id="pbRemain2">฿0</div>
                     <div class="s-person-sub" id="pbRemainPct2">Remaining</div>
                 </div>
-                <div class="s-settle-row">
-                    <div class="s-person-settle even" id="pbSettle2">All settled ✓</div>
-                    <div class="s-person-explain" id="pbExplain2"></div>
-                </div>
+                <div class="s-person-paid" id="pbPaid2"></div>
             </div>
+        </div>
+
+        <!-- SETTLEMENT BANNER -->
+        <div class="settle-banner" id="settleBanner">
+            <div class="settle-main" id="settleMain">✅ All Settled</div>
+            <div class="settle-detail" id="settleDetail">No transfer needed</div>
         </div>
 
         <!-- TABS -->
@@ -2573,42 +2593,30 @@
             const p2RemainPct = salary2 > 0 ? ((p2Remain / salary2) * 100).toFixed(0) : 0;
             document.getElementById('pbRemainPct2').textContent = `${p2RemainPct}% of ${fmt(salary2)}`;
 
-            // Settlement
-            const settleEl1 = document.getElementById('pbSettle1');
-            const settleEl2 = document.getElementById('pbSettle2');
-            const explainEl1 = document.getElementById('pbExplain1');
-            const explainEl2 = document.getElementById('pbExplain2');
-
-            // Build explanation
+            // Per-card paid summary
             const p1Name = settings.person1;
             const p2Name = settings.person2;
-            const explain1Base = `Paid <b>${fmt(p1ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
-            const explain2Base = `Paid <b>${fmt(p2ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
+            document.getElementById('pbPaid1').innerHTML = `Paid <b>${fmt(p1ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
+            document.getElementById('pbPaid2').innerHTML = `Paid <b>${fmt(p2ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
+
+            // Settlement banner (single, clear)
+            const banner = document.getElementById('settleBanner');
+            const settleMain = document.getElementById('settleMain');
+            const settleDetail = document.getElementById('settleDetail');
 
             if (Math.abs(p1Diff) < 1) {
-                settleEl1.className = 's-person-settle even';
-                settleEl1.textContent = 'Settled ✓';
-                settleEl2.className = 's-person-settle even';
-                settleEl2.textContent = 'Settled ✓';
-                explainEl1.innerHTML = `${explain1Base} · Equal — no transfer`;
-                explainEl2.innerHTML = `${explain2Base} · Equal — no transfer`;
-            } else if (p1Diff > 0) {
-                // Person 1 overpaid
-                settleEl1.className = 's-person-settle gets';
-                settleEl1.textContent = `💰 +${fmt(p1Diff)}`;
-                settleEl2.className = 's-person-settle owes';
-                settleEl2.textContent = `💸 -${fmt(p1Diff)}`;
-                explainEl1.innerHTML = `${explain1Base} · Overpaid <b>${fmt(p1Diff)}</b> → ${p2Name} pays back`;
-                explainEl2.innerHTML = `${explain2Base} · Underpaid <b>${fmt(p1Diff)}</b> → Send to ${p1Name}`;
+                banner.className = 'settle-banner even';
+                settleMain.textContent = '✅ All Settled — No Transfer Needed';
+                settleDetail.innerHTML = `Both paid equally · Fair share <b>${fmt(fairShare)}</b> each`;
             } else {
-                // Person 2 overpaid
+                banner.className = 'settle-banner owes';
+                const payer = p1Diff < 0 ? p1Name : p2Name;
+                const receiver = p1Diff < 0 ? p2Name : p1Name;
                 const diff = Math.abs(p1Diff);
-                settleEl1.className = 's-person-settle owes';
-                settleEl1.textContent = `💸 -${fmt(diff)}`;
-                settleEl2.className = 's-person-settle gets';
-                settleEl2.textContent = `💰 +${fmt(diff)}`;
-                explainEl1.innerHTML = `${explain1Base} · Underpaid <b>${fmt(diff)}</b> → Send to ${p2Name}`;
-                explainEl2.innerHTML = `${explain2Base} · Overpaid <b>${fmt(diff)}</b> → ${p1Name} pays back`;
+                const payerPaid = p1Diff < 0 ? p1ActualPaid : p2ActualPaid;
+                const receiverPaid = p1Diff < 0 ? p2ActualPaid : p1ActualPaid;
+                settleMain.innerHTML = `💸 ${payer} → send <b>${fmt(diff)}</b> → ${receiver}`;
+                settleDetail.innerHTML = `${payer} paid <b>${fmt(payerPaid)}</b> · ${receiver} paid <b>${fmt(receiverPaid)}</b> · Fair share <b>${fmt(fairShare)}</b> each`;
             }
         }
 
