@@ -2320,6 +2320,8 @@
         function saveCC() {
             localStorage.setItem(ccKey(), JSON.stringify(creditCards));
             updateLastModified();
+            // Also save to Firebase so changes persist across devices/refreshes
+            try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
         }
 
         function fmt(n) {
