@@ -2576,13 +2576,16 @@
             const p2Paid = p2Expenses.reduce((s, e) => s + e.amount, 0);
             const sharedPaid = sharedExpenses.reduce((s, e) => s + e.amount, 0);
 
-            const fairShare = totalExp / 2;
-            const p1Remain = salary1 - fairShare;
-            const p2Remain = salary2 - fairShare;
-
             const p1ActualPaid = p1Paid + (sharedPaid / 2);
             const p2ActualPaid = p2Paid + (sharedPaid / 2);
-            const p1Diff = p1ActualPaid - fairShare;
+
+            // Final after settlement = balance ÷ 2 (same for both)
+            const finalEach = balEach;
+            // What each person currently has in hand
+            const p1InHand = salary1 - p1ActualPaid;
+            const p2InHand = salary2 - p2ActualPaid;
+            // Transfer needed: positive = must send, negative = will receive
+            const p1Transfer = p1InHand - finalEach;
 
             // Update names & avatars
             document.getElementById('pbAvatar1').textContent = settings.person1.charAt(0);
@@ -2590,40 +2593,35 @@
             document.getElementById('pbName1').textContent = settings.person1;
             document.getElementById('pbName2').textContent = settings.person2;
 
-            // Person 1 remaining (= final after settlement)
+            // Both show same final value = balance ÷ 2
             const r1El = document.getElementById('pbRemain1');
-            r1El.textContent = fmtSigned(p1Remain);
-            r1El.classList.toggle('negative', p1Remain < 0);
-            const p1RemainPct = salary1 > 0 ? ((p1Remain / salary1) * 100).toFixed(0) : 0;
-            document.getElementById('pbRemainPct1').textContent = `${p1RemainPct}% of ${fmt(salary1)}`;
+            r1El.textContent = fmtSigned(finalEach);
+            r1El.classList.toggle('negative', finalEach < 0);
+            document.getElementById('pbRemainPct1').textContent = `Balance ÷ 2`;
 
-            // Person 2 remaining (= final after settlement)
             const r2El = document.getElementById('pbRemain2');
-            r2El.textContent = fmtSigned(p2Remain);
-            r2El.classList.toggle('negative', p2Remain < 0);
-            const p2RemainPct = salary2 > 0 ? ((p2Remain / salary2) * 100).toFixed(0) : 0;
-            document.getElementById('pbRemainPct2').textContent = `${p2RemainPct}% of ${fmt(salary2)}`;
+            r2El.textContent = fmtSigned(finalEach);
+            r2El.classList.toggle('negative', finalEach < 0);
+            document.getElementById('pbRemainPct2').textContent = `Balance ÷ 2`;
 
-            // Per-card breakdown: In hand ± settlement = final
+            // Per-card breakdown: In hand ± transfer = final
             const p1Name = settings.person1;
             const p2Name = settings.person2;
-            const p1InHand = salary1 - p1ActualPaid;
-            const p2InHand = salary2 - p2ActualPaid;
-            const diff = Math.abs(p1Diff);
+            const transferAmt = Math.abs(p1Transfer);
             const bd1 = document.getElementById('pbBreakdown1');
             const bd2 = document.getElementById('pbBreakdown2');
 
-            if (Math.abs(p1Diff) < 1) {
-                bd1.innerHTML = `Salary <b>${fmt(salary1)}</b> − Paid <b>${fmt(p1ActualPaid)}</b><br><span class="settle-chip even">✓ Settled</span> No transfer`;
-                bd2.innerHTML = `Salary <b>${fmt(salary2)}</b> − Paid <b>${fmt(p2ActualPaid)}</b><br><span class="settle-chip even">✓ Settled</span> No transfer`;
-            } else if (p1Diff < 0) {
-                // Person 1 underpaid → sends money
-                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip send">− send ${fmt(diff)}</span>`;
-                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(diff)}</span>`;
+            if (Math.abs(p1Transfer) < 1) {
+                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip even">✓ No transfer</span>`;
+                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip even">✓ No transfer</span>`;
+            } else if (p1Transfer > 0) {
+                // Person 1 has more → sends to Person 2
+                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip send">− send ${fmt(transferAmt)}</span>`;
+                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(transferAmt)}</span>`;
             } else {
-                // Person 2 underpaid → sends money
-                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(diff)}</span>`;
-                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip send">− send ${fmt(diff)}</span>`;
+                // Person 2 has more → sends to Person 1
+                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(transferAmt)}</span>`;
+                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip send">− send ${fmt(transferAmt)}</span>`;
             }
 
             // Settlement banner (single, clear)
@@ -2631,19 +2629,18 @@
             const settleMain = document.getElementById('settleMain');
             const settleDetail = document.getElementById('settleDetail');
 
-            if (Math.abs(p1Diff) < 1) {
+            if (Math.abs(p1Transfer) < 1) {
                 banner.className = 'settle-banner even';
                 settleMain.textContent = '✅ All Settled — No Transfer Needed';
-                settleDetail.innerHTML = `Both paid equally · Fair share <b>${fmt(fairShare)}</b> each`;
+                settleDetail.innerHTML = `Both have <b>${fmt(finalEach)}</b> · No transfer needed`;
             } else {
                 banner.className = 'settle-banner owes';
-                const payer = p1Diff < 0 ? p1Name : p2Name;
-                const receiver = p1Diff < 0 ? p2Name : p1Name;
-                const diff = Math.abs(p1Diff);
-                const payerPaid = p1Diff < 0 ? p1ActualPaid : p2ActualPaid;
-                const receiverPaid = p1Diff < 0 ? p2ActualPaid : p1ActualPaid;
-                settleMain.innerHTML = `💸 ${payer} → send <b>${fmt(diff)}</b> → ${receiver}`;
-                settleDetail.innerHTML = `${payer} paid <b>${fmt(payerPaid)}</b> · ${receiver} paid <b>${fmt(receiverPaid)}</b> · Fair share <b>${fmt(fairShare)}</b> each`;
+                const payer = p1Transfer > 0 ? p1Name : p2Name;
+                const receiver = p1Transfer > 0 ? p2Name : p1Name;
+                const payerInHand = p1Transfer > 0 ? p1InHand : p2InHand;
+                const receiverInHand = p1Transfer > 0 ? p2InHand : p1InHand;
+                settleMain.innerHTML = `💸 ${payer} → send <b>${fmt(transferAmt)}</b> → ${receiver}`;
+                settleDetail.innerHTML = `${payer} has <b>${fmt(payerInHand)}</b> · ${receiver} has <b>${fmt(receiverInHand)}</b> · After transfer both = <b>${fmt(finalEach)}</b>`;
             }
         }
 
