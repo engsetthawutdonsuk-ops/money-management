@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>💰 Money Management</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
@@ -134,7 +137,18 @@
         body.dark-mode .cc-card { border-color: #475569; }
         body.dark-mode .cc-summary-strip { background: #1e293b; border-color: #334155; }
         body.dark-mode .fixed-summary-bar { background: #1e293b; border-color: #334155; }
-        body.dark-mode .header-drawer { background: #1e293b; }
+        body.dark-mode .header-drawer .drawer-backdrop { background: rgba(0,0,0,0.6); }
+        body.dark-mode .drawer-panel { background: #1e293b; }
+        body.dark-mode .drawer-close { color: #94a3b8; }
+        body.dark-mode .receipt-upload-area { border-color: #475569; background: rgba(255,255,255,0.03); }
+        body.dark-mode .receipt-placeholder { color: #94a3b8; }
+        body.dark-mode .exp-card.needs-amount { background: #1a1f2e; }
+        body.dark-mode .salary-card { background: #1e293b; border-color: #334155; }
+        body.dark-mode .summary-item { background: #1e293b; }
+        body.dark-mode .payment-progress-bar { background: #1e293b; border-color: #334155; }
+        body.dark-mode .pp-track { background: #0f172a; }
+        body.dark-mode .bottom-tab-bar { background: #1e293b; border-color: #334155; }
+        body.dark-mode .install-banner { background: #1e293b; color: #e2e8f0; }
         body.dark-mode .user-menu { background: #1e293b; border-color: #475569; }
         body.dark-mode .btn-ghost { color: #94a3b8; border-color: #475569; }
         body.dark-mode .exp-total-bar { background: #1e293b; border-color: #334155; }
@@ -1588,29 +1602,45 @@
             .header-right { display: none; }
             /* Container tight */
             .container { padding: 8px; }
-            /* Summary: single column */
-            .summary-strip { grid-template-columns: 1fr; gap: 6px; }
+            /* Summary: 2 columns on phone for compact look */
+            .summary-strip { grid-template-columns: 1fr 1fr; gap: 6px; }
             .summary-item { padding: 10px 12px; }
-            .summary-item .s-value { font-size: 1rem; }
-            .summary-item .s-half { font-size: 0.72rem; padding: 3px 7px; }
+            .summary-item .s-value { font-size: 0.95rem; }
+            .summary-item .s-half { font-size: 0.68rem; padding: 3px 7px; }
+            .summary-item .s-label { font-size: 0.68rem; }
+            .summary-item .s-sub { font-size: 0.62rem; }
+            /* Balance spans full width */
+            .summary-item.balance { grid-column: 1 / -1; }
             /* Person row: single column */
             .person-row { grid-template-columns: 1fr; gap: 6px; }
             .summary-item .s-person-val { font-size: 1.1rem; }
             .settle-banner { padding: 12px 14px; }
             .settle-main { font-size: 0.95rem; }
-            /* Salary: single column */
-            .salary-section { grid-template-columns: 1fr; }
+            /* Salary: side by side for compact */
+            .salary-section { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .salary-card { padding: 10px; }
+            .salary-card-header h3 { font-size: 0.78rem; }
+            .salary-card-header .role { font-size: 0.62rem; }
+            .person-avatar { width: 28px; height: 28px; font-size: 0.7rem; }
+            .salary-input { font-size: 16px !important; padding: 8px 10px !important; }
+            .salary-card-body { gap: 4px; }
             /* Charts: single column */
             .charts-grid { grid-template-columns: 1fr; }
+            .chart-card { padding: 12px; }
+            .chart-card h3 { font-size: 0.82rem; }
+            /* Monthly Comparison mobile */
+            .monthly-comp-header { gap: 8px; font-size: 0.72rem; flex-wrap: wrap; justify-content: center; }
+            .monthly-comp-summary { flex-wrap: wrap; gap: 8px; font-size: 0.72rem; }
+            .monthly-comp-summary .mcs-item { min-width: 80px; }
+            .monthly-comp-summary .mcs-item .mcs-val { font-size: 0.82rem; }
             /* Forms */
             .form-row { flex-direction: column; gap: 0; }
             input, select, textarea { font-size: 16px !important; }
-            .salary-input { font-size: 16px !important; }
             /* Panel */
             .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
             .panel-tools { width: 100%; justify-content: space-between; }
             .panel-header h2 { font-size: 0.82rem; }
-            .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .panel-body { overflow-x: hidden; -webkit-overflow-scrolling: touch; }
             #searchInput { width: 100% !important; }
             /* Table */
             table { font-size: 0.78rem; }
@@ -1621,46 +1651,91 @@
             .cc-visual { min-height: 140px; padding: 14px 16px; }
             .cc-balance-val { font-size: 1.2rem; }
             /* Fixed */
-            .fixed-card { padding: 12px 14px; gap: 8px; }
-            .fixed-card .fc-info h4 { font-size: 0.85rem; }
-            .fixed-card .fc-info .fc-meta { font-size: 0.7rem; }
-            .fixed-card .fc-amount { font-size: 1rem; }
+            .fixed-card { padding: 10px 12px; gap: 6px; flex-wrap: wrap; }
+            .fixed-card .fc-info h4 { font-size: 0.82rem; }
+            .fixed-card .fc-info .fc-meta { font-size: 0.68rem; }
+            .fixed-card .fc-amount { font-size: 0.95rem; }
             .fixed-summary-bar { flex-direction: column; gap: 4px; padding: 10px 14px; text-align: center; }
             .fixed-summary-bar .fs-value { font-size: 1rem; }
-            /* Expense cards */
-            .exp-section-header { padding: 10px 14px; gap: 8px; }
-            .exp-section-body { padding: 8px; gap: 6px; }
-            .exp-card { padding: 10px 12px; gap: 8px; }
-            .ec-desc { font-size: 0.82rem; }
+            /* Expense cards — MOBILE OPTIMIZED */
+            .exp-section-header { padding: 10px 14px; gap: 6px; }
+            .exp-section-header .sec-title { font-size: 0.78rem; }
+            .exp-section-header .sec-subtotal { font-size: 0.78rem; }
+            .exp-section-header .sec-paid-info { font-size: 0.62rem; }
+            .exp-section-body { padding: 6px; gap: 6px; }
+            .exp-card {
+                padding: 10px 12px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .ec-body { width: calc(100% - 40px); min-width: 0; }
+            .ec-desc { font-size: 0.82rem; white-space: normal; word-break: break-word; }
+            .ec-meta {
+                flex-wrap: wrap;
+                gap: 4px 6px;
+                margin-top: 4px;
+            }
+            .ec-meta .ec-note { max-width: 100%; }
+            .ec-right {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 6px;
+                border-top: 1px solid var(--border);
+                margin-left: 30px;
+            }
+            .ec-amount { min-width: auto; }
             .ec-amount-val { font-size: 0.88rem; }
+            .ec-actions { gap: 6px; }
+            .ec-actions .btn-icon { width: 32px; height: 32px; font-size: 0.82rem; }
+            /* Tags in expense row */
+            .expense-tag { font-size: 0.6rem; padding: 1px 6px; }
+            /* Receipt thumb in row */
+            .receipt-thumb { width: 28px; height: 28px; }
             /* Filter pills: scroll */
             .filter-pills { padding: 4px 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
             .filter-pills::-webkit-scrollbar { display: none; }
-            .filter-pill { flex-shrink: 0; padding: 4px 10px; font-size: 0.7rem; }
+            .filter-pill { flex-shrink: 0; padding: 5px 12px; font-size: 0.7rem; }
+            /* Payment progress bar */
+            .payment-progress-bar { padding: 8px 12px; font-size: 0.75rem; }
             /* Buttons */
             .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
             .month-nav button { width: 32px; height: 32px; font-size: 0.85rem; }
             .month-nav .month-label { min-width: 100px; font-size: 0.82rem; }
-            /* Modal */
-            .modal { width: 96%; margin: 8px; }
+            /* Modal — MOBILE OPTIMIZED */
+            .modal-overlay { padding: 8px; align-items: flex-end; }
+            .modal { width: 100%; max-width: 100%; margin: 0; border-radius: 16px 16px 0 0; max-height: 92vh; }
             .modal-body { padding: 14px; }
             .modal-header { padding: 14px 16px; }
             .modal-header h3 { font-size: 0.95rem; }
-            .modal-footer { padding: 12px 16px; }
-            .modal-content { width: 95% !important; margin: 10px auto; max-height: 90vh; }
-            /* Toast centered */
+            .modal-footer { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+            .modal-content { width: 100% !important; margin: 0; max-height: 92vh; }
+            /* Receipt upload area mobile */
+            .receipt-upload-area { min-height: 56px; padding: 10px; }
+            .receipt-placeholder { font-size: 0.78rem; }
+            .receipt-preview img { max-height: 100px; }
+            /* Tag chips in modal */
+            .tag-quick { gap: 4px; }
+            .tag-quick .tag-chip { padding: 5px 10px; font-size: 0.72rem; }
+            /* Category chips */
+            .cat-quick { gap: 4px; flex-wrap: wrap; }
+            .cat-chip { padding: 5px 10px; font-size: 0.72rem; }
+            /* Toast centered above bottom bar */
             .toast { left: 16px; right: 16px; transform: translateY(100px); bottom: 72px; }
             .toast.show { transform: translateY(0); }
-            /* Category chips */
-            .cat-quick { gap: 4px; }
-            .cat-chip { padding: 4px 10px; font-size: 0.72rem; }
             /* User profile compact */
             .user-name { display: none; }
             .user-profile-btn { padding: 4px 6px; }
+            /* Drawer */
+            .drawer-panel { width: 280px; max-width: 80vw; }
+            /* Amount update modal */
+            .amount-update-info { text-align: center; }
         }
 
         /* ===== RESPONSIVE — TABLET (481px–1024px) ===== */
         @media (min-width: 481px) and (max-width: 1024px) {
+            body { padding-bottom: 64px; }
+            .bottom-tab-bar { display: block; }
+            .tabs { display: none !important; }
             .container { padding: 14px; }
             /* Header: compact with hamburger for extra items */
             .header { padding: 14px 16px; gap: 10px; }
@@ -1670,11 +1745,14 @@
             .header-right .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
             /* Salary: side by side still */
             .salary-section { grid-template-columns: 1fr 1fr; }
-            /* Summary: 2 columns */
+            /* Summary: 3 columns */
             .summary-strip { grid-template-columns: repeat(3, 1fr); }
             .person-row { grid-template-columns: 1fr 1fr; gap: 8px; }
             /* Charts */
             .charts-grid { grid-template-columns: 1fr; }
+            .chart-card { padding: 14px; }
+            /* Monthly Comparison tablet */
+            .monthly-comp-summary { flex-wrap: wrap; gap: 10px; }
             /* Tabs: scrollable */
             .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
             .tabs::-webkit-scrollbar { display: none; }
@@ -1695,10 +1773,13 @@
             .fixed-card .fc-amount { font-size: 1rem; }
             /* Expense */
             .exp-card { padding: 12px 14px; gap: 10px; }
+            .ec-meta { flex-wrap: wrap; gap: 4px 8px; }
             .exp-section-body { padding: 10px; gap: 8px; }
             /* Modal */
             .modal { width: 90%; max-width: 520px; }
             .modal-body { padding: 18px; }
+            /* Receipt */
+            .receipt-upload-area { min-height: 60px; }
             /* Toast */
             .toast { left: 50%; right: auto; transform: translateX(-50%) translateY(100px); }
             .toast.show { transform: translateX(-50%) translateY(0); }
@@ -1810,7 +1891,12 @@
 
             <div class="drawer-section">
                 <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" style="width:100%;justify-content:flex-start;" id="drawerDarkBtn">🌙 Dark Mode</button>
+                <button class="btn btn-ghost btn-sm" onclick="forceRefreshData()" style="width:100%;justify-content:flex-start;">🔄 Refresh Data</button>
+                <button class="btn btn-ghost btn-sm" onclick="forceClearAndReload()" style="width:100%;justify-content:flex-start;color:var(--warning);">⚡ Force Reload</button>
                 <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
+            </div>
+            <div style="font-size:0.6rem;color:var(--text-light);text-align:center;padding-top:8px;border-top:1px solid var(--border);">
+                v2.5 · Last sync: <span id="drawerSyncTime">-</span>
             </div>
         </div>
     </div>
@@ -2476,10 +2562,15 @@
                             if (cloudData.settings) settings = cloudData.settings;
                             if (cloudData.fixedExpenses) fixedExpenses = cloudData.fixedExpenses;
                             if (cloudData.creditCards) creditCards = cloudData.creditCards;
-                            // Persist but do NOT update lastModified (we preserve cloud timestamp if present)
+                            // Persist all data to localStorage for offline access
                             saveDataQuiet();
+                            if (cloudData.settings) localStorage.setItem(settingsKey(), JSON.stringify(settings));
+                            if (cloudData.fixedExpenses) localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
+                            if (cloudData.creditCards) localStorage.setItem(ccKey(), JSON.stringify(creditCards));
                             if (cloudTs) localStorage.setItem('salaryApp_lastModified', cloudTs);
+                            applyNames();
                             renderAll();
+                            updateSyncTimeDisplay();
                             console.log('📥 Loaded data from Firebase realtime');
                             // Show notification if this was someone else's change
                             showSyncNotification(cloudTs);
@@ -2492,7 +2583,8 @@
             // Save to Firebase (overwrite path)
             function saveToFirebase() {
                 try {
-                    const ts = localStorage.getItem('salaryApp_lastModified') || new Date().toISOString();
+                    const ts = new Date().toISOString();
+                    localStorage.setItem('salaryApp_lastModified', ts);
                     localSaveTimestamp = ts; // track so we don't self-notify
                     const payload = {
                         data: data,
@@ -2502,8 +2594,11 @@
                         lastModified: ts
                     };
                     return db.ref('shared_money_data').set(payload)
-                        .then(() => { console.log('☁️ Saved to Firebase'); })
-                        .catch(err => { console.error('Firebase save failed', err); });
+                        .then(function() {
+                            console.log('☁️ Saved to Firebase');
+                            updateSyncTimeDisplay();
+                        })
+                        .catch(function(err) { console.error('Firebase save failed', err); });
                 } catch (e) { console.error('Firebase save exception', e); }
             }
 
@@ -2659,6 +2754,9 @@
 
         function saveAll() {
             localStorage.setItem(storageKey(), JSON.stringify(data));
+            localStorage.setItem(settingsKey(), JSON.stringify(settings));
+            localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
+            localStorage.setItem(ccKey(), JSON.stringify(creditCards));
             updateLastModified();
             // Also save to Firebase realtime DB (if initialized)
             try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
@@ -2684,6 +2782,8 @@
         function saveFixed() {
             localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
             updateLastModified();
+            // Also save to Firebase so fixed expenses sync across devices
+            try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
         }
 
         function saveCC() {
@@ -2767,12 +2867,12 @@
             const md = getMonthData();
             document.getElementById('salary1').value = md.salary1 || '';
             document.getElementById('salary2').value = md.salary2 || '';
-            renderSummary();
-            renderExpenseTable();
-            renderCharts();
-            renderMonthlyHistory();
-            renderFixedExpenses();
-            renderCreditCards();
+            try { renderSummary(); } catch(e) { console.error('renderSummary error:', e); }
+            try { renderExpenseTable(); } catch(e) { console.error('renderExpenseTable error:', e); }
+            try { renderCharts(); } catch(e) { console.error('renderCharts error:', e); }
+            try { renderMonthlyHistory(); } catch(e) { console.error('renderMonthlyHistory error:', e); }
+            try { renderFixedExpenses(); } catch(e) { console.error('renderFixedExpenses error:', e); }
+            try { renderCreditCards(); } catch(e) { console.error('renderCreditCards error:', e); }
         }
 
         function renderSummary() {
@@ -2994,7 +3094,7 @@
                         <span class="person-tag ${paidClass}">${paidLabel}</span>
                         ${e.tags && e.tags.length ? e.tags.map(t => { const tag = EXPENSE_TAGS.find(x => x.id === t); return tag ? `<span class="expense-tag tag-${t}">${tag.icon} ${tag.id}</span>` : ''; }).join('') : ''}
                         ${e.note && e.note !== 'Fixed monthly' && e.note !== 'Credit card bill' ? `<span class="ec-dot"></span><span class="ec-note">${e.note}</span>` : ''}
-                        ${e.receiptUrl ? `<span class="ec-dot"></span><img class="receipt-thumb" src="${e.receiptUrl}" alt="📷" onclick="event.stopPropagation();openReceiptLightbox('${e.receiptUrl}')" title="View receipt">` : ''}
+                        ${e.receiptUrl ? `<span class="ec-dot"></span><img class="receipt-thumb" src="${e.receiptUrl}" alt="📷" onclick="event.stopPropagation();openReceiptLightbox(this.src)" title="View receipt">` : ''}
                     </div>
                 </div>
                 <div class="ec-right">
@@ -3462,6 +3562,7 @@
         function renderCharts() {
             const md = getMonthData();
             const expenses = md.expenses;
+            const totalExp = expenses.reduce((s, e) => s + e.amount, 0);
 
             // Category aggregation
             const catMap = {};
@@ -3567,7 +3668,6 @@
             // --- Income vs Expense ---
             if (incomeVsExpChart) incomeVsExpChart.destroy();
             const income = (md.salary1 || 0) + (md.salary2 || 0);
-            const totalExp = expenses.reduce((s, e) => s + e.amount, 0);
             incomeVsExpChart = new Chart(document.getElementById('incomeVsExpChart'), {
                 type: 'bar',
                 data: {
@@ -3664,10 +3764,11 @@
         function toggleDrawer() {
             var d = document.getElementById('headerDrawer');
             d.classList.toggle('open');
-            // Sync month label
+            // Sync month label and sync time
             var ml = document.getElementById('monthLabel');
             var dml = document.getElementById('drawerMonthLabel');
             if (ml && dml) dml.textContent = ml.textContent;
+            updateSyncTimeDisplay();
         }
 
         function toggleDarkMode() {
@@ -3889,6 +3990,92 @@
             });
         }
 
+        // ========== MOBILE DATA REFRESH ==========
+        function forceRefreshData() {
+            showToast('🔄 Refreshing data from cloud...', '');
+            try {
+                if (typeof db !== 'undefined' && db) {
+                    db.ref('shared_money_data').once('value').then(function(snapshot) {
+                        var cloudData = snapshot.val();
+                        if (cloudData) {
+                            data = cloudData.data || cloudData;
+                            if (cloudData.settings) settings = cloudData.settings;
+                            if (cloudData.fixedExpenses) fixedExpenses = cloudData.fixedExpenses;
+                            if (cloudData.creditCards) creditCards = cloudData.creditCards;
+                            saveDataQuiet();
+                            if (cloudData.settings) {
+                                localStorage.setItem(settingsKey(), JSON.stringify(settings));
+                            }
+                            if (cloudData.fixedExpenses) {
+                                localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
+                            }
+                            if (cloudData.creditCards) {
+                                localStorage.setItem(ccKey(), JSON.stringify(creditCards));
+                            }
+                            applyNames();
+                            updateMonthLabel();
+                            renderAll();
+                            updateSyncTimeDisplay();
+                            showToast('✅ Data refreshed from cloud!', 'success');
+                        } else {
+                            showToast('⚠️ No cloud data found', 'error');
+                        }
+                    }).catch(function(err) {
+                        console.error('Refresh failed:', err);
+                        showToast('❌ Refresh failed - check connection', 'error');
+                    });
+                } else {
+                    loadAll();
+                    renderAll();
+                    showToast('✅ Data reloaded from local storage', 'success');
+                }
+            } catch (e) {
+                console.error('Refresh error:', e);
+                showToast('❌ Refresh error', 'error');
+            }
+            toggleDrawer();
+        }
+
+        function forceClearAndReload() {
+            if (confirm('This will clear browser cache and reload data from the cloud. Continue?')) {
+                // Clear all caches
+                if ('caches' in window) {
+                    caches.keys().then(function(names) { names.forEach(function(n) { caches.delete(n); }); });
+                }
+                // Clear service workers
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                        regs.forEach(function(r) { r.unregister(); });
+                    });
+                }
+                // Force page reload without cache
+                window.location.reload(true);
+            }
+        }
+
+        function updateSyncTimeDisplay() {
+            var ts = localStorage.getItem('salaryApp_lastModified');
+            var el = document.getElementById('drawerSyncTime');
+            if (el && ts) {
+                try {
+                    var d = new Date(ts);
+                    el.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString([], { day: '2-digit', month: 'short' });
+                } catch (e) { el.textContent = '-'; }
+            }
+        }
+
+        // Mobile visibility change — reload data when app comes back to foreground
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // App came back to foreground — re-render with latest data
+                try {
+                    loadAll();
+                    renderAll();
+                    updateSyncTimeDisplay();
+                } catch (e) { console.warn('Visibility reload error:', e); }
+            }
+        });
+
         // ========== INIT ==========
         function init() {
             const now = new Date();
@@ -3900,6 +4087,7 @@
             updateMonthLabel();
             renderAll();
             setupEvents();
+            updateSyncTimeDisplay();
         }
 
         init();
