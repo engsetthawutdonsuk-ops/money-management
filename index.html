@@ -2502,6 +2502,7 @@
         let fixedExpenses = []; // recurring monthly expenses template
         let creditCards = []; // credit card objects
         let currentCCFilter = 'all';
+        let firebaseDataLoaded = false; // GUARD: prevents saving to Firebase before cloud data is loaded
 
         // ===== Firebase Realtime DB integration =====
         const firebaseConfig = window.FIREBASE_CONFIG;
@@ -2575,17 +2576,28 @@
                             // Show notification if this was someone else's change
                             showSyncNotification(cloudTs);
                             firstLoad = false;
+                            firebaseDataLoaded = true;
                         }
                     });
                 } catch (e) { console.warn('Firebase load error', e); }
             }
 
-            // Save to Firebase (overwrite path)
+            // Save to Firebase (overwrite path) — ONLY if data has been loaded first
             function saveToFirebase() {
+                if (!firebaseDataLoaded) {
+                    console.warn('⚠️ Skipping Firebase save — initial data not yet loaded');
+                    return;
+                }
+                // Safety: don't push empty data to Firebase
+                var hasData = Object.keys(data).length > 0;
+                if (!hasData) {
+                    console.warn('⚠️ Skipping Firebase save — data is empty');
+                    return;
+                }
                 try {
                     const ts = new Date().toISOString();
                     localStorage.setItem('salaryApp_lastModified', ts);
-                    localSaveTimestamp = ts; // track so we don't self-notify
+                    localSaveTimestamp = ts;
                     const payload = {
                         data: data,
                         settings: settings,
@@ -2758,7 +2770,7 @@
             localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
             localStorage.setItem(ccKey(), JSON.stringify(creditCards));
             updateLastModified();
-            // Also save to Firebase realtime DB (if initialized)
+            // Only push to Firebase if data was previously loaded from cloud
             try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
         }
 
@@ -2782,7 +2794,7 @@
         function saveFixed() {
             localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
             updateLastModified();
-            // Also save to Firebase so fixed expenses sync across devices
+            // Push to Firebase only if data was loaded first
             try { if (typeof saveToFirebase === 'function') saveToFirebase(); } catch (e) {}
         }
 
@@ -4012,6 +4024,7 @@
                             if (cloudData.creditCards) {
                                 localStorage.setItem(ccKey(), JSON.stringify(creditCards));
                             }
+                            firebaseDataLoaded = true;
                             applyNames();
                             updateMonthLabel();
                             renderAll();
@@ -4064,15 +4077,14 @@
             }
         }
 
-        // Mobile visibility change — reload data when app comes back to foreground
+        // Mobile visibility change — re-render UI when app comes back to foreground
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                // App came back to foreground — re-render with latest data
+                // Just re-render, don't overwrite data — Firebase listener handles sync
                 try {
-                    loadAll();
                     renderAll();
                     updateSyncTimeDisplay();
-                } catch (e) { console.warn('Visibility reload error:', e); }
+                } catch (e) { console.warn('Visibility render error:', e); }
             }
         });
 
