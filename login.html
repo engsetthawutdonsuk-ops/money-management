@@ -298,11 +298,8 @@
 
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const errorMessage = document.getElementById('errorMessage');
-        let loginDone = false;
 
-        function onLoginSuccess(user) {
-            if (loginDone) return;
-            loginDone = true;
+        function goToApp(user) {
             localStorage.setItem('user_uid', user.uid);
             localStorage.setItem('user_email', user.email);
             localStorage.setItem('user_name', user.displayName || '');
@@ -310,61 +307,75 @@
             window.location.href = 'index.html';
         }
 
-        // Did user arrive here from logout?
+        function showError(msg) {
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = msg;
+            googleLoginBtn.classList.remove('loading');
+        }
+
+        // Did user arrive from logout?
         const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
         if (cameFromLogout) {
             sessionStorage.removeItem('logged_out');
-            // Sign out any leftover session so user can pick a different account
             auth.signOut().catch(() => {});
-        } else {
-            // NOT from logout: check for redirect result AND listen for auth state
-            // Both run in parallel — whichever detects the user first wins
-
-            // 1) Check redirect result (for return from Google sign-in)
-            auth.getRedirectResult().then((result) => {
-                if (result && result.user) {
-                    onLoginSuccess(result.user);
-                }
-            }).catch((error) => {
-                if (error.code) {
-                    errorMessage.style.display = 'block';
-                    if (error.code === 'auth/unauthorized-domain') {
-                        errorMessage.textContent = 'Domain not authorized. Add this domain in Firebase Console > Authentication > Settings.';
-                    } else if (error.code === 'auth/operation-not-allowed') {
-                        errorMessage.textContent = 'Google sign-in is not enabled in Firebase Console.';
-                    } else {
-                        errorMessage.textContent = 'Error: ' + error.message;
-                    }
-                    console.error('Redirect error:', error);
-                }
-            });
-
-            // 2) Listen for auth state (catches both redirect result AND existing session)
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    onLoginSuccess(user);
-                }
-            });
         }
 
-        // Login button — redirect with account chooser
-        googleLoginBtn.addEventListener('click', async () => {
-            try {
-                errorMessage.style.display = 'none';
-                googleLoginBtn.classList.add('loading');
+        // If user already has an active session (and not from logout), go straight to app
+        auth.onAuthStateChanged((user) => {
+            if (user && !cameFromLogout) {
+                goToApp(user);
+            }
+        });
 
-                const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({ prompt: 'select_account' });
-                await auth.signInWithRedirect(provider);
-            } catch (error) {
-                googleLoginBtn.classList.remove('loading');
-                errorMessage.style.display = 'block';
-                if (error.code === 'auth/disallowed-useragent') {
-                    errorMessage.textContent = 'Please open this page in Safari or Chrome (not in-app browser).';
+        // Login button click
+        googleLoginBtn.addEventListener('click', () => {
+            errorMessage.style.display = 'none';
+            googleLoginBtn.classList.add('loading');
+
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+
+            // Use signInWithPopup — works on desktop AND mobile Safari/Chrome
+            auth.signInWithPopup(provider).then((result) => {
+                goToApp(result.user);
+            }).catch((error) => {
+                console.error('Popup login error:', error);
+
+                // If popup blocked or fails, fall back to redirect
+                if (error.code === 'auth/popup-blocked' ||
+                    error.code === 'auth/popup-closed-by-user' ||
+                    error.code === 'auth/cancelled-popup-request') {
+                    showError('Pop-up was blocked or closed. Trying redirect method...');
+                    // Try redirect as fallback
+                    setTimeout(() => {
+                        auth.signInWithRedirect(provider).catch((e) => {
+                            showError('Error: ' + e.message);
+                        });
+                    }, 1500);
+                } else if (error.code === 'auth/disallowed-useragent') {
+                    // In-app browser (LINE, Facebook, etc.) - must use redirect
+                    auth.signInWithRedirect(provider).catch((e) => {
+                        showError('Please open this page in Safari or Chrome directly.');
+                    });
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    showError('This domain is not authorized. Add it in Firebase Console > Authentication > Settings.');
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    showError('Google sign-in is not enabled in Firebase Console.');
                 } else {
-                    errorMessage.textContent = 'Error: ' + error.message;
+                    showError('Login error: ' + error.message);
                 }
-                console.error('Login error:', error);
+            });
+        });
+
+        // Also handle redirect result (fallback from popup failure)
+        auth.getRedirectResult().then((result) => {
+            if (result && result.user) {
+                goToApp(result.user);
+            }
+        }).catch((error) => {
+            if (error.code) {
+                console.error('Redirect result error:', error);
+                showError('Error: ' + error.message);
             }
         });
     </script>
