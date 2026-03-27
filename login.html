@@ -296,6 +296,13 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
+        function isMobileOrEmbeddedBrowser() {
+            const ua = navigator.userAgent || '';
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+            const isEmbedded = /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
+            return isMobile || isEmbedded;
+        }
+
         // Check if user is already logged in
         auth.onAuthStateChanged((user) => {
             if (user) {
@@ -308,6 +315,26 @@
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const errorMessage = document.getElementById('errorMessage');
 
+        auth.getRedirectResult().then((result) => {
+            if (result && result.user) {
+                const user = result.user;
+                localStorage.setItem('user_uid', user.uid);
+                localStorage.setItem('user_email', user.email);
+                localStorage.setItem('user_name', user.displayName || '');
+                localStorage.setItem('user_photo', user.photoURL || '');
+                window.location.href = 'index.html';
+            }
+        }).catch((error) => {
+            errorMessage.style.display = 'block';
+            if (error.code === 'auth/unauthorized-domain') {
+                errorMessage.textContent = 'Domain is not authorized in Firebase Authentication settings.';
+            } else if (error.code === 'auth/operation-not-allowed') {
+                errorMessage.textContent = 'Google provider is not enabled in Firebase Authentication.';
+            } else {
+                errorMessage.textContent = `Error: ${error.message}`;
+            }
+        });
+
         googleLoginBtn.addEventListener('click', async () => {
             try {
                 errorMessage.style.display = 'none';
@@ -317,19 +344,18 @@
                 provider.addScope('profile');
                 provider.addScope('email');
 
+                if (isMobileOrEmbeddedBrowser()) {
+                    await auth.signInWithRedirect(provider);
+                    return;
+                }
+
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
-
-                // Store user info
                 localStorage.setItem('user_uid', user.uid);
                 localStorage.setItem('user_email', user.email);
-                localStorage.setItem('user_name', user.displayName);
-                localStorage.setItem('user_photo', user.photoURL);
-
-                // Redirect to main app
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 500);
+                localStorage.setItem('user_name', user.displayName || '');
+                localStorage.setItem('user_photo', user.photoURL || '');
+                window.location.href = 'index.html';
             } catch (error) {
                 googleLoginBtn.classList.remove('loading');
                 errorMessage.style.display = 'block';
@@ -340,6 +366,8 @@
                     errorMessage.textContent = 'Pop-up was blocked. Please allow pop-ups and try again.';
                 } else if (error.code === 'auth/network-request-failed') {
                     errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                } else if (error.code === 'auth/disallowed-useragent') {
+                    errorMessage.textContent = 'Google blocks sign-in inside in-app browsers. Please open this page in Safari or Chrome and try again.';
                 } else if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('API key not valid'))) {
                     errorMessage.textContent = 'Firebase API key is invalid. Update apiKey in firebase-config.js and allow this domain in Firebase Auth settings.';
                 } else {
