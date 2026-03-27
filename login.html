@@ -300,8 +300,12 @@
         const btnText = document.getElementById('btnText');
         const errorMessage = document.getElementById('errorMessage');
 
-        // Detect mobile/tablet
-        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        // Detect Android specifically (redirect only works reliably on Android Chrome)
+        const ua = navigator.userAgent || '';
+        const isAndroid = /Android/i.test(ua);
+        const isEmbeddedBrowser = /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
+        // Use redirect ONLY for Android or embedded browsers; everything else uses popup
+        const useRedirect = isAndroid || isEmbeddedBrowser;
 
         function goToApp(user) {
             localStorage.setItem('user_uid', user.uid);
@@ -313,6 +317,8 @@
 
         function showError(msg) {
             errorMessage.style.display = 'block';
+            errorMessage.style.background = '#fee2e2';
+            errorMessage.style.color = '#991b1b';
             errorMessage.textContent = msg;
             googleLoginBtn.classList.remove('loading');
         }
@@ -331,7 +337,7 @@
             auth.signOut().catch(() => {});
         }
 
-        // Handle redirect result FIRST (user returning from Google on mobile)
+        // Handle redirect return (Android flow comes back here)
         auth.getRedirectResult().then((result) => {
             if (result && result.user) {
                 goToApp(result.user);
@@ -342,7 +348,7 @@
             }
         });
 
-        // If user already has an active session (and not from logout), go to app
+        // If user already has a session and not from logout, go to app
         auth.onAuthStateChanged((user) => {
             if (user && !cameFromLogout) {
                 goToApp(user);
@@ -357,29 +363,30 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
 
-            if (isMobile) {
-                // MOBILE: Use redirect (popup is blocked on most mobile browsers)
+            if (useRedirect) {
+                // ANDROID / EMBEDDED: Use redirect
                 showStatus('Redirecting to Google...');
                 auth.signInWithRedirect(provider).catch((error) => {
-                    if (error.code === 'auth/disallowed-useragent') {
-                        showError('Please open this page in Safari or Chrome (not in-app browser like LINE or Facebook).');
-                    } else {
-                        showError('Error: ' + error.message);
-                    }
+                    showError('Error: ' + error.message);
                 });
             } else {
-                // DESKTOP: Use popup
+                // DESKTOP + iPHONE/iPAD: Use popup (works on Safari, Chrome, etc.)
                 auth.signInWithPopup(provider).then((result) => {
                     goToApp(result.user);
                 }).catch((error) => {
                     console.error('Login error:', error);
                     if (error.code === 'auth/popup-blocked') {
-                        showError('Pop-up blocked. Please allow pop-ups for this site.');
+                        showError('Pop-up blocked by browser. Please allow pop-ups for this site and try again.');
                     } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
                         showError('Login cancelled. Please try again.');
-                        googleLoginBtn.classList.remove('loading');
                     } else if (error.code === 'auth/unauthorized-domain') {
                         showError('Domain not authorized in Firebase Console.');
+                    } else if (error.code === 'auth/disallowed-useragent') {
+                        // Fallback to redirect for blocked user agents
+                        showStatus('Redirecting to Google...');
+                        auth.signInWithRedirect(provider).catch(() => {
+                            showError('Please open this page in Safari or Chrome directly.');
+                        });
                     } else {
                         showError('Error: ' + error.message);
                     }
