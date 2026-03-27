@@ -3316,6 +3316,13 @@
             document.getElementById('tab-' + tab).classList.add('active');
             if (tab === 'charts') setTimeout(renderCharts, 100);
             if (tab === 'creditcards') setTimeout(renderCreditCards, 50);
+            // Scroll to just below the settlement banner
+            var banner = document.getElementById('settleBanner');
+            if (banner) {
+                var rect = banner.getBoundingClientRect();
+                var scrollTarget = window.scrollY + rect.bottom;
+                window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+            }
         }
 
         // Keep bottom bar in sync with desktop tabs
