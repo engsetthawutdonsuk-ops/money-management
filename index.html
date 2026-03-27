@@ -858,6 +858,33 @@
         .form-group textarea:focus { border-color: var(--primary); }
         .form-group textarea { resize: vertical; min-height: 60px; }
 
+        /* ===== EXPENSE TAGS ===== */
+        .tag-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .tag-chip {
+            padding: 5px 12px;
+            background: #f8fafc;
+            border: 1.5px solid var(--border);
+            border-radius: 99px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            color: var(--text-light);
+        }
+        .tag-chip:hover { border-color: var(--primary-light); background: #eef2ff; }
+        .tag-chip.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+        .expense-tag {
+            display: inline-flex; align-items: center; gap: 2px;
+            padding: 1px 7px; border-radius: 99px;
+            font-size: 0.58rem; font-weight: 700;
+        }
+        .expense-tag.tag-urgent { background: #fef2f2; color: #f87171; }
+        .expense-tag.tag-optional { background: #f0fdf4; color: #4ade80; }
+        .expense-tag.tag-important { background: #fefce8; color: #fbbf24; }
+        .expense-tag.tag-one-time { background: #ede9fe; color: #818cf8; }
+        .expense-tag.tag-subscription { background: #fdf2f8; color: #f472b6; }
+
         /* ===== CATEGORY QUICK SELECT ===== */
         .cat-quick {
             display: flex;
@@ -1766,6 +1793,8 @@
                     <button class="filter-pill" data-filter="paid" onclick="filterExpenses('paid',this)">✅ Paid</button>
                     <button class="filter-pill" data-filter="fixed" onclick="filterExpenses('fixed',this)" title="Recurring monthly bills like rent, internet, etc.">📌 Recurring</button>
                     <button class="filter-pill" data-filter="creditcard" onclick="filterExpenses('creditcard',this)" title="Credit card bill payments">💳 Credit Card</button>
+                    <button class="filter-pill" data-filter="tag-urgent" onclick="filterExpenses('tag-urgent',this)">🔴 Urgent</button>
+                    <button class="filter-pill" data-filter="tag-important" onclick="filterExpenses('tag-important',this)">🟡 Important</button>
                 </div>
                 <div class="panel-body">
                     <div class="expense-list" id="expenseListContainer"></div>
@@ -2023,6 +2052,10 @@
                         <input type="text" id="expNote" placeholder="Any additional note...">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Tags</label>
+                    <div class="tag-quick" id="tagQuickSelect"></div>
+                </div>
                 <input type="hidden" id="editExpIndex" value="-1">
             </div>
             <div class="modal-footer">
@@ -2125,6 +2158,14 @@
 
     <script>
         // ========== CONSTANTS ==========
+        const EXPENSE_TAGS = [
+            { id: 'urgent', label: '🔴 Urgent', icon: '🔴' },
+            { id: 'important', label: '🟡 Important', icon: '🟡' },
+            { id: 'optional', label: '🟢 Optional', icon: '🟢' },
+            { id: 'one-time', label: '🔵 One-time', icon: '🔵' },
+            { id: 'subscription', label: '🩷 Subscription', icon: '🩷' },
+        ];
+
         const CATEGORIES = [
             { icon: '🏠', name: 'Housing/Rent' },
             { icon: '⚡', name: 'Utilities' },
@@ -2173,12 +2214,47 @@
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
 
+            // ===== NOTIFICATION SYSTEM =====
+            let notifyReady = false;
+            let localSaveTimestamp = null; // tracks saves from THIS device
+            let firstLoad = true; // skip notification on initial load
+
+            function requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(perm => {
+                        notifyReady = (perm === 'granted');
+                        console.log('🔔 Notification permission:', perm);
+                    });
+                } else {
+                    notifyReady = (Notification.permission === 'granted');
+                }
+            }
+            requestNotificationPermission();
+
+            function showSyncNotification(cloudTimestamp) {
+                if (!notifyReady || firstLoad) return;
+                // Don't notify for our own saves
+                if (localSaveTimestamp && cloudTimestamp === localSaveTimestamp) return;
+                try {
+                    const n = new Notification('💰 Money Management Updated', {
+                        body: 'Your partner made changes. Data synced!',
+                        icon: 'icon-192.png',
+                        tag: 'sync-update',
+                        renotify: true
+                    });
+                    setTimeout(() => n.close(), 5000);
+                } catch (e) { console.warn('Notification failed', e); }
+                // Also show in-app toast
+                showToast('📥 Partner updated data — synced!', 'success');
+            }
+
             // Load from Firebase (realtime listener)
             function loadFromFirebaseRealtime() {
                 try {
                     db.ref('shared_money_data').on('value', (snapshot) => {
                         const cloudData = snapshot.val();
                         if (cloudData) {
+                            const cloudTs = cloudData.lastModified || null;
                             // Merge or overwrite depending on your preference — here we overwrite
                             data = cloudData.data || cloudData;
                             if (cloudData.settings) settings = cloudData.settings;
@@ -2186,9 +2262,12 @@
                             if (cloudData.creditCards) creditCards = cloudData.creditCards;
                             // Persist but do NOT update lastModified (we preserve cloud timestamp if present)
                             saveDataQuiet();
-                            if (cloudData.lastModified) localStorage.setItem('salaryApp_lastModified', cloudData.lastModified);
+                            if (cloudTs) localStorage.setItem('salaryApp_lastModified', cloudTs);
                             renderAll();
                             console.log('📥 Loaded data from Firebase realtime');
+                            // Show notification if this was someone else's change
+                            showSyncNotification(cloudTs);
+                            firstLoad = false;
                         }
                     });
                 } catch (e) { console.warn('Firebase load error', e); }
@@ -2197,12 +2276,14 @@
             // Save to Firebase (overwrite path)
             function saveToFirebase() {
                 try {
+                    const ts = localStorage.getItem('salaryApp_lastModified') || new Date().toISOString();
+                    localSaveTimestamp = ts; // track so we don't self-notify
                     const payload = {
                         data: data,
                         settings: settings,
                         fixedExpenses: fixedExpenses,
                         creditCards: creditCards,
-                        lastModified: localStorage.getItem('salaryApp_lastModified') || new Date().toISOString()
+                        lastModified: ts
                     };
                     return db.ref('shared_money_data').set(payload)
                         .then(() => { console.log('☁️ Saved to Firebase'); })
@@ -2695,6 +2776,7 @@
                         ${!isCCItem && !e.isFixed ? `<span class="ec-dot"></span><span class="cat-tag">${catIcon} ${e.category}</span>` : ''}
                         <span class="ec-dot"></span>
                         <span class="person-tag ${paidClass}">${paidLabel}</span>
+                        ${e.tags && e.tags.length ? e.tags.map(t => { const tag = EXPENSE_TAGS.find(x => x.id === t); return tag ? `<span class="expense-tag tag-${t}">${tag.icon} ${tag.id}</span>` : ''; }).join('') : ''}
                         ${e.note && e.note !== 'Fixed monthly' && e.note !== 'Credit card bill' ? `<span class="ec-dot"></span><span class="ec-note">${e.note}</span>` : ''}
                     </div>
                 </div>
@@ -2738,7 +2820,8 @@
 
             let filtered = md.expenses.filter(e =>
                 e.desc.toLowerCase().includes(search.toLowerCase()) ||
-                e.category.toLowerCase().includes(search.toLowerCase())
+                e.category.toLowerCase().includes(search.toLowerCase()) ||
+                (e.tags && e.tags.some(t => t.toLowerCase().includes(search.toLowerCase())))
             );
 
             // Apply filter pills
@@ -2746,6 +2829,10 @@
             else if (currentFilter === 'paid') filtered = filtered.filter(e => !!e.paid);
             else if (currentFilter === 'fixed') filtered = filtered.filter(e => e.isFixed);
             else if (currentFilter === 'creditcard') filtered = filtered.filter(e => e.isCreditCard);
+            else if (currentFilter.startsWith('tag-')) {
+                const tagId = currentFilter.replace('tag-', '');
+                filtered = filtered.filter(e => e.tags && e.tags.includes(tagId));
+            }
 
             if (filtered.length === 0) {
                 container.innerHTML = '';
@@ -2906,6 +2993,7 @@
                 document.getElementById('expNote').value = e.note || '';
                 document.getElementById('expModalTitle').textContent = 'Edit Expense';
                 selectCatChip(e.category);
+                renderTagChips(e.tags || []);
             } else {
                 const today = new Date();
                 const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -2916,6 +3004,7 @@
                 document.getElementById('expPaidBy').value = 'shared';
                 document.getElementById('expNote').value = '';
                 document.getElementById('expModalTitle').textContent = 'Add Expense';
+                renderTagChips([]);
             }
 
             document.getElementById('expenseModal').classList.add('active');
@@ -2944,6 +3033,24 @@
             });
         }
 
+        // ========== TAG PICKER ==========
+        let selectedTags = [];
+
+        function renderTagChips(selected = []) {
+            selectedTags = [...selected];
+            const container = document.getElementById('tagQuickSelect');
+            container.innerHTML = EXPENSE_TAGS.map(t =>
+                `<button class="tag-chip ${selectedTags.includes(t.id) ? 'active' : ''}" type="button" onclick="toggleTag('${t.id}')">${t.label}</button>`
+            ).join('');
+        }
+
+        function toggleTag(tagId) {
+            const idx = selectedTags.indexOf(tagId);
+            if (idx >= 0) selectedTags.splice(idx, 1);
+            else selectedTags.push(tagId);
+            renderTagChips(selectedTags);
+        }
+
         function saveExpense() {
             const date = document.getElementById('expDate').value;
             const amount = parseFloat(document.getElementById('expAmount').value) || 0;
@@ -2957,7 +3064,7 @@
             if (amount <= 0) { showToast('Please enter an amount', 'error'); return; }
 
             const md = getMonthData();
-            const entry = { date, amount, desc, category, paidBy, note };
+            const entry = { date, amount, desc, category, paidBy, note, tags: [...selectedTags] };
 
             if (index >= 0) {
                 md.expenses[index] = entry;
