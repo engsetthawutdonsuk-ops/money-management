@@ -18,6 +18,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -2055,19 +2056,12 @@
         let currentCCFilter = 'all';
 
         // ===== Firebase Realtime DB integration =====
-        // Replace the firebaseConfig values with your project's config from Firebase Console
-        // NOTE: keep these values public — they are safe to embed for client-side access,
-        // but make sure your Realtime Database rules allow secure access (during testing you can use test mode).
-        const firebaseConfig = {
-            apiKey: "AIzaSyAYF1wZnPuy8CINM8A3JLzRXfOFPzoaI9o",
-            authDomain: "my-money-app-9954d.firebaseapp.com",
-            databaseURL: "https://my-money-app-9954d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "my-money-app-9954d",
-            storageBucket: "my-money-app-9954d.appspot.com",
-            messagingSenderId: "1036616583831",
-            appId: "1:1036616583831:web:7f397748df5ac60e7837d2",
-            measurementId: "G-SSGN58KXE5"
-        };
+        const firebaseConfig = window.FIREBASE_CONFIG;
+
+        if (!firebaseConfig || !firebaseConfig.apiKey) {
+            alert('Firebase configuration is missing. Please update firebase-config.js before using the app.');
+            throw new Error('Missing firebase config');
+        }
 
         // Initialize Firebase (compat)
         try {
@@ -4367,7 +4361,6 @@
             if (user) {
                 currentUser = user;
                 updateUserProfile(user);
-                loadAppData(); // Load app data once authenticated
             } else {
                 // No user logged in, redirect to login page
                 window.location.href = 'login.html';
