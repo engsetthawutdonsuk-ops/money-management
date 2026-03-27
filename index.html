@@ -4362,20 +4362,8 @@
                 currentUser = user;
                 updateUserProfile(user);
             } else {
-                // Check localStorage as quick fallback (user just came from login redirect)
-                const userEmail = localStorage.getItem('user_email');
-                if (userEmail) {
-                    // Give Firebase a moment to restore auth state after redirect
-                    setTimeout(() => {
-                        if (!currentUser) {
-                            localStorage.clear();
-                            window.location.href = 'login.html';
-                        }
-                    }, 2000);
-                } else {
-                    // No user at all, go to login
-                    window.location.href = 'login.html';
-                }
+                // Not authenticated — redirect to login
+                window.location.href = 'login.html';
             }
         });
 
@@ -4407,10 +4395,10 @@
 
         function logoutUser() {
             if (confirm('Are you sure you want to logout?')) {
-                // Set flag BEFORE signOut so login page knows user just logged out
+                // Set flag so login page knows to show account chooser, not auto-login
                 sessionStorage.setItem('logged_out', 'true');
+                localStorage.clear();
                 auth.signOut().then(() => {
-                    localStorage.clear();
                     window.location.href = 'login.html';
                 }).catch((error) => {
                     console.error('Logout error:', error);

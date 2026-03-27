@@ -296,12 +296,8 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        // Google Login Button
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const errorMessage = document.getElementById('errorMessage');
-
-        // Track if we're returning from a redirect login
-        let isRedirectReturn = false;
 
         // Helper: save user info and go to main app
         function onLoginSuccess(user) {
@@ -312,12 +308,33 @@
             window.location.href = 'index.html';
         }
 
-        // FIRST: Handle redirect result (mobile flow comes back here after Google login)
-        // This must be checked before anything else
+        // Did user arrive here from logout?
+        const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
+        if (cameFromLogout) {
+            sessionStorage.removeItem('logged_out');
+        }
+
+        // STEP 1: Always check getRedirectResult FIRST (handles return from Google login)
+        // STEP 2: Only AFTER that resolves, check if user already has a session
         auth.getRedirectResult().then((result) => {
             if (result && result.user) {
-                isRedirectReturn = true;
+                // User just completed Google login via redirect
                 onLoginSuccess(result.user);
+                return;
+            }
+
+            // No redirect result — now check existing session
+            if (cameFromLogout) {
+                // User just logged out, sign out Firebase and stay on login page
+                auth.signOut().catch(() => {});
+            } else {
+                // Check if user already has an active session
+                const unsubscribe = auth.onAuthStateChanged((user) => {
+                    unsubscribe(); // Only check once
+                    if (user) {
+                        onLoginSuccess(user);
+                    }
+                });
             }
         }).catch((error) => {
             if (error.code) {
@@ -329,50 +346,27 @@
                 } else {
                     errorMessage.textContent = 'Error: ' + error.message;
                 }
+                console.error('Login error:', error);
             }
         });
 
-        // Check if user arrived here from a logout (flag set by logoutUser)
-        const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
-        if (cameFromLogout) {
-            // Clear the flag and sign out Firebase so old session doesn't auto-restore
-            sessionStorage.removeItem('logged_out');
-            auth.signOut().catch(() => {});
-        }
-
-        // Only auto-redirect if user is already signed in AND didn't just log out
-        auth.onAuthStateChanged((user) => {
-            if (user && !cameFromLogout && !isRedirectReturn) {
-                // User has active session, go to app
-                window.location.href = 'index.html';
-            }
-        });
-
+        // Login button — always use redirect with account chooser
         googleLoginBtn.addEventListener('click', async () => {
             try {
                 errorMessage.style.display = 'none';
                 googleLoginBtn.classList.add('loading');
 
                 const provider = new firebase.auth.GoogleAuthProvider();
-                // Force account chooser so user can pick a different account
                 provider.setCustomParameters({ prompt: 'select_account' });
-
-                // Use redirect for all platforms (more reliable, avoids popup issues)
                 await auth.signInWithRedirect(provider);
             } catch (error) {
                 googleLoginBtn.classList.remove('loading');
                 errorMessage.style.display = 'block';
 
-                if (error.code === 'auth/popup-closed-by-user') {
-                    errorMessage.textContent = 'Login cancelled. Please try again.';
-                } else if (error.code === 'auth/popup-blocked') {
-                    errorMessage.textContent = 'Pop-up was blocked. Please allow pop-ups and try again.';
-                } else if (error.code === 'auth/network-request-failed') {
+                if (error.code === 'auth/network-request-failed') {
                     errorMessage.textContent = 'Network error. Please check your connection and try again.';
                 } else if (error.code === 'auth/disallowed-useragent') {
-                    errorMessage.textContent = 'Google blocks sign-in inside in-app browsers. Please open this page in Safari or Chrome and try again.';
-                } else if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('API key not valid'))) {
-                    errorMessage.textContent = 'Firebase API key is invalid. Update apiKey in firebase-config.js.';
+                    errorMessage.textContent = 'Google blocks sign-in inside in-app browsers. Please open this page in Safari or Chrome.';
                 } else {
                     errorMessage.textContent = 'Error: ' + error.message;
                 }
