@@ -297,7 +297,11 @@
         const auth = firebase.auth();
 
         const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const btnText = document.getElementById('btnText');
         const errorMessage = document.getElementById('errorMessage');
+
+        // Detect mobile/tablet
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
         function goToApp(user) {
             localStorage.setItem('user_uid', user.uid);
@@ -313,6 +317,13 @@
             googleLoginBtn.classList.remove('loading');
         }
 
+        function showStatus(msg) {
+            errorMessage.style.display = 'block';
+            errorMessage.style.background = '#e0e7ff';
+            errorMessage.style.color = '#3730a3';
+            errorMessage.textContent = msg;
+        }
+
         // Did user arrive from logout?
         const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
         if (cameFromLogout) {
@@ -320,7 +331,18 @@
             auth.signOut().catch(() => {});
         }
 
-        // If user already has an active session (and not from logout), go straight to app
+        // Handle redirect result FIRST (user returning from Google on mobile)
+        auth.getRedirectResult().then((result) => {
+            if (result && result.user) {
+                goToApp(result.user);
+            }
+        }).catch((error) => {
+            if (error.code) {
+                showError('Login error: ' + error.message);
+            }
+        });
+
+        // If user already has an active session (and not from logout), go to app
         auth.onAuthStateChanged((user) => {
             if (user && !cameFromLogout) {
                 goToApp(user);
@@ -335,47 +357,33 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
 
-            // Use signInWithPopup — works on desktop AND mobile Safari/Chrome
-            auth.signInWithPopup(provider).then((result) => {
-                goToApp(result.user);
-            }).catch((error) => {
-                console.error('Popup login error:', error);
-
-                // If popup blocked or fails, fall back to redirect
-                if (error.code === 'auth/popup-blocked' ||
-                    error.code === 'auth/popup-closed-by-user' ||
-                    error.code === 'auth/cancelled-popup-request') {
-                    showError('Pop-up was blocked or closed. Trying redirect method...');
-                    // Try redirect as fallback
-                    setTimeout(() => {
-                        auth.signInWithRedirect(provider).catch((e) => {
-                            showError('Error: ' + e.message);
-                        });
-                    }, 1500);
-                } else if (error.code === 'auth/disallowed-useragent') {
-                    // In-app browser (LINE, Facebook, etc.) - must use redirect
-                    auth.signInWithRedirect(provider).catch((e) => {
-                        showError('Please open this page in Safari or Chrome directly.');
-                    });
-                } else if (error.code === 'auth/unauthorized-domain') {
-                    showError('This domain is not authorized. Add it in Firebase Console > Authentication > Settings.');
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    showError('Google sign-in is not enabled in Firebase Console.');
-                } else {
-                    showError('Login error: ' + error.message);
-                }
-            });
-        });
-
-        // Also handle redirect result (fallback from popup failure)
-        auth.getRedirectResult().then((result) => {
-            if (result && result.user) {
-                goToApp(result.user);
-            }
-        }).catch((error) => {
-            if (error.code) {
-                console.error('Redirect result error:', error);
-                showError('Error: ' + error.message);
+            if (isMobile) {
+                // MOBILE: Use redirect (popup is blocked on most mobile browsers)
+                showStatus('Redirecting to Google...');
+                auth.signInWithRedirect(provider).catch((error) => {
+                    if (error.code === 'auth/disallowed-useragent') {
+                        showError('Please open this page in Safari or Chrome (not in-app browser like LINE or Facebook).');
+                    } else {
+                        showError('Error: ' + error.message);
+                    }
+                });
+            } else {
+                // DESKTOP: Use popup
+                auth.signInWithPopup(provider).then((result) => {
+                    goToApp(result.user);
+                }).catch((error) => {
+                    console.error('Login error:', error);
+                    if (error.code === 'auth/popup-blocked') {
+                        showError('Pop-up blocked. Please allow pop-ups for this site.');
+                    } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                        showError('Login cancelled. Please try again.');
+                        googleLoginBtn.classList.remove('loading');
+                    } else if (error.code === 'auth/unauthorized-domain') {
+                        showError('Domain not authorized in Firebase Console.');
+                    } else {
+                        showError('Error: ' + error.message);
+                    }
+                });
             }
         });
     </script>
