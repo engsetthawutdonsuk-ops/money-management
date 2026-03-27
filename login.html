@@ -296,75 +296,55 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        // Clear any cached user data to allow different user login after logout
-        function clearFirebaseCache() {
-            return new Promise((resolve) => {
-                // Clear all Firebase IndexedDB data (for different user login)
-                if (indexedDB) {
-                    const request = indexedDB.databases ? indexedDB.databases() : [];
-                    if (request.then) {
-                        request.then((dbs) => {
-                            dbs.forEach(db => {
-                                if (db.name && db.name.includes('firebase')) {
-                                    indexedDB.deleteDatabase(db.name);
-                                }
-                            });
-                            resolve();
-                        }).catch(() => resolve());
-                    } else {
-                        resolve();
-                    }
-                } else {
-                    resolve();
-                }
-            });
-        }
-
-        // Clear cache and sign out to ensure fresh login state
-        clearFirebaseCache().then(() => {
-            auth.signOut().catch(() => {});
-        });
-
-        function isMobileOrEmbeddedBrowser() {
-            const ua = navigator.userAgent || '';
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-            const isEmbedded = /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
-            return isMobile || isEmbedded;
-        }
-
-        // Check if user is already logged in (with delay to let Firebase restore state)
-        let authCheckDone = false;
-        auth.onAuthStateChanged((user) => {
-            if (!authCheckDone) {
-                authCheckDone = true;
-                if (user) {
-                    // User is logged in, redirect to main app
-                    window.location.href = 'index.html';
-                }
-            }
-        });
-
         // Google Login Button
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const errorMessage = document.getElementById('errorMessage');
 
+        // Track if we're returning from a redirect login
+        let isRedirectReturn = false;
+
+        // Helper: save user info and go to main app
+        function onLoginSuccess(user) {
+            localStorage.setItem('user_uid', user.uid);
+            localStorage.setItem('user_email', user.email);
+            localStorage.setItem('user_name', user.displayName || '');
+            localStorage.setItem('user_photo', user.photoURL || '');
+            window.location.href = 'index.html';
+        }
+
+        // FIRST: Handle redirect result (mobile flow comes back here after Google login)
+        // This must be checked before anything else
         auth.getRedirectResult().then((result) => {
             if (result && result.user) {
-                const user = result.user;
-                localStorage.setItem('user_uid', user.uid);
-                localStorage.setItem('user_email', user.email);
-                localStorage.setItem('user_name', user.displayName || '');
-                localStorage.setItem('user_photo', user.photoURL || '');
-                window.location.href = 'index.html';
+                isRedirectReturn = true;
+                onLoginSuccess(result.user);
             }
         }).catch((error) => {
-            errorMessage.style.display = 'block';
-            if (error.code === 'auth/unauthorized-domain') {
-                errorMessage.textContent = 'Domain is not authorized in Firebase Authentication settings.';
-            } else if (error.code === 'auth/operation-not-allowed') {
-                errorMessage.textContent = 'Google provider is not enabled in Firebase Authentication.';
-            } else {
-                errorMessage.textContent = `Error: ${error.message}`;
+            if (error.code) {
+                errorMessage.style.display = 'block';
+                if (error.code === 'auth/unauthorized-domain') {
+                    errorMessage.textContent = 'Domain is not authorized in Firebase Authentication settings.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage.textContent = 'Google provider is not enabled in Firebase Authentication.';
+                } else {
+                    errorMessage.textContent = 'Error: ' + error.message;
+                }
+            }
+        });
+
+        // Check if user arrived here from a logout (flag set by logoutUser)
+        const cameFromLogout = sessionStorage.getItem('logged_out') === 'true';
+        if (cameFromLogout) {
+            // Clear the flag and sign out Firebase so old session doesn't auto-restore
+            sessionStorage.removeItem('logged_out');
+            auth.signOut().catch(() => {});
+        }
+
+        // Only auto-redirect if user is already signed in AND didn't just log out
+        auth.onAuthStateChanged((user) => {
+            if (user && !cameFromLogout && !isRedirectReturn) {
+                // User has active session, go to app
+                window.location.href = 'index.html';
             }
         });
 
@@ -374,21 +354,11 @@
                 googleLoginBtn.classList.add('loading');
 
                 const provider = new firebase.auth.GoogleAuthProvider();
-                provider.addScope('profile');
-                provider.addScope('email');
+                // Force account chooser so user can pick a different account
+                provider.setCustomParameters({ prompt: 'select_account' });
 
-                if (isMobileOrEmbeddedBrowser()) {
-                    await auth.signInWithRedirect(provider);
-                    return;
-                }
-
-                const result = await auth.signInWithPopup(provider);
-                const user = result.user;
-                localStorage.setItem('user_uid', user.uid);
-                localStorage.setItem('user_email', user.email);
-                localStorage.setItem('user_name', user.displayName || '');
-                localStorage.setItem('user_photo', user.photoURL || '');
-                window.location.href = 'index.html';
+                // Use redirect for all platforms (more reliable, avoids popup issues)
+                await auth.signInWithRedirect(provider);
             } catch (error) {
                 googleLoginBtn.classList.remove('loading');
                 errorMessage.style.display = 'block';
@@ -402,11 +372,10 @@
                 } else if (error.code === 'auth/disallowed-useragent') {
                     errorMessage.textContent = 'Google blocks sign-in inside in-app browsers. Please open this page in Safari or Chrome and try again.';
                 } else if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('API key not valid'))) {
-                    errorMessage.textContent = 'Firebase API key is invalid. Update apiKey in firebase-config.js and allow this domain in Firebase Auth settings.';
+                    errorMessage.textContent = 'Firebase API key is invalid. Update apiKey in firebase-config.js.';
                 } else {
-                    errorMessage.textContent = `Error: ${error.message}`;
+                    errorMessage.textContent = 'Error: ' + error.message;
                 }
-
                 console.error('Login error:', error);
             }
         });

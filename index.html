@@ -4355,28 +4355,25 @@
         // ===== AUTHENTICATION FUNCTIONS =====
         const auth = firebase.auth();
         let currentUser = null;
-        let authCheckDone = false;
 
         // Check authentication on page load
         auth.onAuthStateChanged((user) => {
-            authCheckDone = true;
             if (user) {
                 currentUser = user;
                 updateUserProfile(user);
             } else {
-                // Check localStorage as backup (in case of timing issues after login)
+                // Check localStorage as quick fallback (user just came from login redirect)
                 const userEmail = localStorage.getItem('user_email');
                 if (userEmail) {
-                    // User was just logged in but auth state hasn't synced yet
-                    // Set a flag and wait a moment for auth to sync
+                    // Give Firebase a moment to restore auth state after redirect
                     setTimeout(() => {
                         if (!currentUser) {
-                            // Auth still hasn't synced, redirect to login
+                            localStorage.clear();
                             window.location.href = 'login.html';
                         }
-                    }, 500);
+                    }, 2000);
                 } else {
-                    // No user logged in, redirect to login page
+                    // No user at all, go to login
                     window.location.href = 'login.html';
                 }
             }
@@ -4410,9 +4407,10 @@
 
         function logoutUser() {
             if (confirm('Are you sure you want to logout?')) {
+                // Set flag BEFORE signOut so login page knows user just logged out
+                sessionStorage.setItem('logged_out', 'true');
                 auth.signOut().then(() => {
                     localStorage.clear();
-                    sessionStorage.clear();
                     window.location.href = 'login.html';
                 }).catch((error) => {
                     console.error('Logout error:', error);
