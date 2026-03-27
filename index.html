@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
     /* ===== DEVICE DETECTION ===== */
@@ -69,6 +70,88 @@
             --gradient-4: linear-gradient(135deg, #fbbf24, #fb923c);
             --person1-color: #818cf8;
             --person2-color: #f472b6;
+        }
+
+        /* ===== DARK MODE ===== */
+        body.dark-mode {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #e2e8f0;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.4);
+        }
+        body.dark-mode::before {
+            background: radial-gradient(circle at 30% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(236,72,153,0.08) 0%, transparent 50%);
+        }
+        body.dark-mode .header {
+            background: linear-gradient(135deg, #1e293b, #312e81, #1e293b);
+            color: #e2e8f0;
+        }
+        body.dark-mode .header h1,
+        body.dark-mode .header .subtitle,
+        body.dark-mode .month-label { color: #e2e8f0; }
+        body.dark-mode .month-nav button {
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+        body.dark-mode .mobile-menu-btn {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+        body.dark-mode .btab { color: #94a3b8; }
+        body.dark-mode .btab.active { color: var(--primary); }
+        body.dark-mode .bottom-bar { background: #1e293b; border-color: #334155; }
+        body.dark-mode .panel { background: var(--card-bg); border-color: var(--border); }
+        body.dark-mode .panel-header { border-color: var(--border); }
+        body.dark-mode .settle-banner { background: linear-gradient(135deg, #1e1b4b, #312e81) !important; }
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+        body.dark-mode .modal { background: #1e293b; }
+        body.dark-mode .modal-header { border-color: #334155; }
+        body.dark-mode .modal-footer { border-color: #334155; }
+        body.dark-mode .exp-card { background: #1e293b; border-color: #334155; }
+        body.dark-mode .exp-card.is-paid { background: #1a2332; }
+        body.dark-mode .fixed-card { background: #1e293b; border-color: #334155; }
+        body.dark-mode .chart-card { background: #1e293b; }
+        body.dark-mode .filter-pill { background: #1e293b; color: #94a3b8; border-color: #334155; }
+        body.dark-mode .filter-pill.active { background: var(--primary); color: #fff; }
+        body.dark-mode .exp-section-header { background: #1e293b; border-color: #334155; }
+        body.dark-mode .person-tag.p1 { background: rgba(129,140,248,0.2); }
+        body.dark-mode .person-tag.p2 { background: rgba(244,114,182,0.2); }
+        body.dark-mode .person-tag.shared { background: rgba(74,222,128,0.2); }
+        body.dark-mode .cat-tag { background: rgba(255,255,255,0.08); }
+        body.dark-mode .cc-card { border-color: #475569; }
+        body.dark-mode .cc-summary-strip { background: #1e293b; border-color: #334155; }
+        body.dark-mode .fixed-summary-bar { background: #1e293b; border-color: #334155; }
+        body.dark-mode .header-drawer { background: #1e293b; }
+        body.dark-mode .user-menu { background: #1e293b; border-color: #475569; }
+        body.dark-mode .btn-ghost { color: #94a3b8; border-color: #475569; }
+        body.dark-mode .exp-total-bar { background: #1e293b; border-color: #334155; }
+
+        .dark-mode-toggle {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            background: #fff;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+        }
+        body.dark-mode .dark-mode-toggle {
+            background: #334155;
+            border-color: #475569;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -782,6 +865,111 @@
             padding: 16px;
         }
         .chart-card h3 { font-size: 0.88rem; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+
+        /* Monthly Comparison */
+        .monthly-comp-header { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; font-size: 0.8rem; font-weight: 600; }
+        .monthly-comp-header .comp-label { padding: 3px 10px; border-radius: 8px; }
+        .monthly-comp-header .comp-prev { background: rgba(129,140,248,0.15); color: #818cf8; }
+        .monthly-comp-header .comp-curr { background: rgba(244,114,182,0.15); color: #f472b6; }
+        .monthly-comp-summary { display: flex; justify-content: space-around; margin-top: 12px; font-size: 0.78rem; text-align: center; }
+        .monthly-comp-summary .mcs-item .mcs-label { color: var(--text-light); }
+        .monthly-comp-summary .mcs-item .mcs-val { font-weight: 700; font-size: 0.92rem; margin-top: 2px; }
+        .mcs-val.up { color: var(--danger); }
+        .mcs-val.down { color: var(--success); }
+
+        /* ===== RECEIPT UPLOAD ===== */
+        .receipt-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .receipt-upload-area:hover { border-color: var(--primary); background: rgba(129,140,248,0.05); }
+        .receipt-placeholder {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-light);
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+        .receipt-placeholder .receipt-icon { font-size: 1.3rem; }
+        .receipt-preview {
+            position: relative;
+            display: inline-block;
+        }
+        .receipt-preview img {
+            max-height: 120px;
+            max-width: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: var(--shadow);
+        }
+        .receipt-remove-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+        }
+        .receipt-uploading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-size: 0.82rem;
+        }
+        .receipt-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .receipt-thumb {
+            width: 32px; height: 32px;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+        /* Receipt lightbox */
+        .receipt-lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .receipt-lightbox.active { display: flex; }
+        .receipt-lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
 
         /* ===== MODAL ===== */
         .modal-overlay {
@@ -1584,6 +1772,7 @@
             </div>
         </div>
         <div class="header-right">
+            <button class="dark-mode-toggle" id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
             <div class="user-profile-wrapper">
                 <button class="user-profile-btn" id="userProfileBtn" onclick="toggleUserMenu()">
                     <img id="userPhoto" src="" alt="User" class="user-photo">
@@ -1620,6 +1809,7 @@
             </div>
 
             <div class="drawer-section">
+                <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" style="width:100%;justify-content:flex-start;" id="drawerDarkBtn">🌙 Dark Mode</button>
                 <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
             </div>
         </div>
@@ -1815,9 +2005,11 @@
                     <h3>Expenses by Category</h3>
                     <canvas id="categoryChart"></canvas>
                 </div>
-                <div class="chart-card">
-                    <h3>Top Expense Categories</h3>
-                    <canvas id="topCatChart"></canvas>
+                <div class="chart-card monthly-comp-card">
+                    <h3>📊 Monthly Comparison</h3>
+                    <div class="monthly-comp-header" id="monthlyCompHeader"></div>
+                    <canvas id="monthlyCompChart"></canvas>
+                    <div class="monthly-comp-summary" id="monthlyCompSummary"></div>
                 </div>
             </div>
         </div>
@@ -2056,7 +2248,26 @@
                     <label>Tags</label>
                     <div class="tag-quick" id="tagQuickSelect"></div>
                 </div>
+                <div class="form-group">
+                    <label>📷 Receipt Photo</label>
+                    <div class="receipt-upload-area" id="receiptUploadArea">
+                        <div class="receipt-preview" id="receiptPreview" style="display:none;">
+                            <img id="receiptPreviewImg" src="" alt="Receipt">
+                            <button type="button" class="receipt-remove-btn" onclick="removeReceipt()">✕</button>
+                        </div>
+                        <div class="receipt-placeholder" id="receiptPlaceholder">
+                            <span class="receipt-icon">📷</span>
+                            <span>Tap to add receipt photo</span>
+                            <input type="file" id="receiptFileInput" accept="image/*" capture="environment" onchange="handleReceiptSelect(event)" style="display:none;">
+                        </div>
+                        <div class="receipt-uploading" id="receiptUploading" style="display:none;">
+                            <div class="receipt-spinner"></div>
+                            <span>Uploading...</span>
+                        </div>
+                    </div>
+                </div>
                 <input type="hidden" id="editExpIndex" value="-1">
+                <input type="hidden" id="expReceiptUrl" value="">
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeExpenseModal()">Cancel</button>
@@ -2095,6 +2306,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- RECEIPT LIGHTBOX -->
+    <div class="receipt-lightbox" id="receiptLightbox" onclick="this.classList.remove('active')">
+        <img id="receiptLightboxImg" src="" alt="Receipt">
     </div>
 
     <!-- TOAST -->
@@ -2778,6 +2994,7 @@
                         <span class="person-tag ${paidClass}">${paidLabel}</span>
                         ${e.tags && e.tags.length ? e.tags.map(t => { const tag = EXPENSE_TAGS.find(x => x.id === t); return tag ? `<span class="expense-tag tag-${t}">${tag.icon} ${tag.id}</span>` : ''; }).join('') : ''}
                         ${e.note && e.note !== 'Fixed monthly' && e.note !== 'Credit card bill' ? `<span class="ec-dot"></span><span class="ec-note">${e.note}</span>` : ''}
+                        ${e.receiptUrl ? `<span class="ec-dot"></span><img class="receipt-thumb" src="${e.receiptUrl}" alt="📷" onclick="event.stopPropagation();openReceiptLightbox('${e.receiptUrl}')" title="View receipt">` : ''}
                     </div>
                 </div>
                 <div class="ec-right">
@@ -2983,6 +3200,14 @@
             document.getElementById('editExpIndex').value = index;
             renderCategoryChips();
 
+            // Reset receipt state
+            receiptPendingUrl = '';
+            document.getElementById('expReceiptUrl').value = '';
+            document.getElementById('receiptPreview').style.display = 'none';
+            document.getElementById('receiptUploading').style.display = 'none';
+            document.getElementById('receiptPlaceholder').style.display = 'flex';
+            document.getElementById('receiptFileInput').value = '';
+
             if (index >= 0) {
                 const e = getMonthData().expenses[index];
                 document.getElementById('expDate').value = e.date;
@@ -2994,6 +3219,12 @@
                 document.getElementById('expModalTitle').textContent = 'Edit Expense';
                 selectCatChip(e.category);
                 renderTagChips(e.tags || []);
+                // Restore receipt if exists
+                if (e.receiptUrl) {
+                    receiptPendingUrl = e.receiptUrl;
+                    document.getElementById('expReceiptUrl').value = e.receiptUrl;
+                    showReceiptPreview(e.receiptUrl);
+                }
             } else {
                 const today = new Date();
                 const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -3059,12 +3290,14 @@
             const paidBy = document.getElementById('expPaidBy').value;
             const note = document.getElementById('expNote').value.trim();
             const index = parseInt(document.getElementById('editExpIndex').value);
+            const receiptUrl = document.getElementById('expReceiptUrl').value || '';
 
             if (!desc) { showToast('Please enter a description', 'error'); return; }
             if (amount <= 0) { showToast('Please enter an amount', 'error'); return; }
 
             const md = getMonthData();
             const entry = { date, amount, desc, category, paidBy, note, tags: [...selectedTags] };
+            if (receiptUrl) entry.receiptUrl = receiptUrl;
 
             if (index >= 0) {
                 md.expenses[index] = entry;
@@ -3224,7 +3457,7 @@
         }
 
         // ========== CHARTS ==========
-        let categoryChart, topCatChart, breakdownChart, incomeVsExpChart, personPieChart;
+        let categoryChart, monthlyCompChart, breakdownChart, incomeVsExpChart, personPieChart;
 
         function renderCharts() {
             const md = getMonthData();
@@ -3260,24 +3493,52 @@
                 }
             });
 
-            // --- Top Categories (new) ---
-            // Build arrays of category labels/values sorted by amount and take top 3
-            const catPairs = catLabels.map((l, idx) => ({ label: l, value: catValues[idx], color: COLORS[idx % COLORS.length] }));
-            catPairs.sort((a,b) => b.value - a.value);
-            const topCats = catPairs.slice(0, 3);
-            if (topCatChart) topCatChart.destroy();
-            topCatChart = new Chart(document.getElementById('topCatChart'), {
+            // --- Monthly Comparison ---
+            const prevM = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevY = currentMonth === 0 ? currentYear - 1 : currentYear;
+            const prevKey = monthKey(prevM, prevY);
+            const prevExpenses = data[prevKey] ? data[prevKey].expenses || [] : [];
+            const prevCatMap = {};
+            prevExpenses.forEach(e => { prevCatMap[e.category] = (prevCatMap[e.category] || 0) + e.amount; });
+            const allCats = [...new Set([...catLabels, ...Object.keys(prevCatMap)])];
+            const curVals = allCats.map(c => catMap[c] || 0);
+            const prevVals = allCats.map(c => prevCatMap[c] || 0);
+
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const prevLabel = monthNames[prevM] + ' ' + prevY;
+            const curLabel = monthNames[currentMonth] + ' ' + currentYear;
+            document.getElementById('monthlyCompHeader').innerHTML =
+                `<span class="comp-label comp-prev">◀ ${prevLabel}</span><span class="comp-label comp-curr">${curLabel} ▶</span>`;
+
+            if (monthlyCompChart) monthlyCompChart.destroy();
+            monthlyCompChart = new Chart(document.getElementById('monthlyCompChart'), {
                 type: 'bar',
                 data: {
-                    labels: topCats.map(c => c.label),
-                    datasets: [{ data: topCats.map(c => c.value), backgroundColor: topCats.map(c => c.color), borderRadius: 8 }]
+                    labels: allCats,
+                    datasets: [
+                        { label: prevLabel, data: prevVals, backgroundColor: 'rgba(129,140,248,0.6)', borderRadius: 6 },
+                        { label: curLabel, data: curVals, backgroundColor: 'rgba(244,114,182,0.6)', borderRadius: 6 }
+                    ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '฿' + ctx.raw.toLocaleString() } } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ฿${ctx.raw.toLocaleString()}` } }
+                    },
                     scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
                 }
             });
+
+            const prevTotal = prevExpenses.reduce((s, e) => s + e.amount, 0);
+            const diff = totalExp - prevTotal;
+            const pct = prevTotal > 0 ? ((diff / prevTotal) * 100).toFixed(0) : (totalExp > 0 ? 100 : 0);
+            const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '—';
+            const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+            document.getElementById('monthlyCompSummary').innerHTML = `
+                <div class="mcs-item"><div class="mcs-label">${prevLabel}</div><div class="mcs-val">${fmt(prevTotal)}</div></div>
+                <div class="mcs-item"><div class="mcs-label">${curLabel}</div><div class="mcs-val">${fmt(totalExp)}</div></div>
+                <div class="mcs-item"><div class="mcs-label">Change</div><div class="mcs-val ${cls}">${arrow} ${Math.abs(pct)}%</div></div>`;
 
             // --- Breakdown horizontal bar ---
             if (breakdownChart) breakdownChart.destroy();
@@ -3408,6 +3669,110 @@
             var dml = document.getElementById('drawerMonthLabel');
             if (ml && dml) dml.textContent = ml.textContent;
         }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+            const drawerBtn = document.getElementById('drawerDarkBtn');
+            if (drawerBtn) drawerBtn.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('moneyMgmt_darkMode', isDark ? '1' : '0');
+        }
+        // Restore dark mode on load
+        (function() {
+            if (localStorage.getItem('moneyMgmt_darkMode') === '1') {
+                document.body.classList.add('dark-mode');
+                var btn = document.getElementById('darkModeToggle');
+                if (btn) btn.textContent = '☀️';
+                var drawerBtn = document.getElementById('drawerDarkBtn');
+                if (drawerBtn) drawerBtn.textContent = '☀️ Light Mode';
+            }
+        })();
+
+        // ========== RECEIPT PHOTO UPLOAD ==========
+        let receiptPendingUrl = '';
+        const storageRef = (function() {
+            try { return firebase.storage().ref(); } catch(e) { return null; }
+        })();
+
+        function handleReceiptSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image must be under 5MB', 'error');
+                return;
+            }
+            uploadReceiptToFirebase(file);
+        }
+
+        function uploadReceiptToFirebase(file) {
+            if (!storageRef) {
+                showToast('Firebase Storage not available', 'error');
+                return;
+            }
+            const fileName = `receipts/${currentKey()}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            const uploadRef = storageRef.child(fileName);
+
+            // Show uploading state
+            document.getElementById('receiptPlaceholder').style.display = 'none';
+            document.getElementById('receiptPreview').style.display = 'none';
+            document.getElementById('receiptUploading').style.display = 'flex';
+
+            uploadRef.put(file).then(snapshot => {
+                return snapshot.ref.getDownloadURL();
+            }).then(url => {
+                receiptPendingUrl = url;
+                document.getElementById('expReceiptUrl').value = url;
+                showReceiptPreview(url);
+                showToast('📷 Receipt uploaded!', 'success');
+            }).catch(err => {
+                console.error('Receipt upload failed:', err);
+                showToast('Upload failed: ' + err.message, 'error');
+                document.getElementById('receiptUploading').style.display = 'none';
+                document.getElementById('receiptPlaceholder').style.display = 'flex';
+            });
+        }
+
+        function showReceiptPreview(url) {
+            document.getElementById('receiptUploading').style.display = 'none';
+            document.getElementById('receiptPlaceholder').style.display = 'none';
+            const preview = document.getElementById('receiptPreview');
+            document.getElementById('receiptPreviewImg').src = url;
+            preview.style.display = 'inline-block';
+        }
+
+        function removeReceipt() {
+            receiptPendingUrl = '';
+            document.getElementById('expReceiptUrl').value = '';
+            document.getElementById('receiptPreview').style.display = 'none';
+            document.getElementById('receiptPlaceholder').style.display = 'flex';
+            document.getElementById('receiptFileInput').value = '';
+        }
+
+        function openReceiptLightbox(url) {
+            document.getElementById('receiptLightboxImg').src = url;
+            document.getElementById('receiptLightbox').classList.add('active');
+        }
+
+        // Click handler for receipt upload area
+        document.addEventListener('DOMContentLoaded', function() {
+            const area = document.getElementById('receiptUploadArea');
+            if (area) {
+                area.addEventListener('click', function(e) {
+                    if (e.target.closest('.receipt-remove-btn')) return;
+                    if (e.target.closest('.receipt-preview')) {
+                        const url = document.getElementById('receiptPreviewImg').src;
+                        if (url) openReceiptLightbox(url);
+                        return;
+                    }
+                    document.getElementById('receiptFileInput').click();
+                });
+            }
+        });
 
         function switchTabFromBar(btn) {
             var tab = btn.dataset.tab;
