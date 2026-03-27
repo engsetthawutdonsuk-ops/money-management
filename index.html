@@ -1375,30 +1375,104 @@
             .month-nav .month-label { min-width: 120px; font-size: 0.85rem; }
             table { font-size: 0.78rem; }
             thead th, tbody td { padding: 8px 8px; }
+            .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
             .form-row { flex-direction: column; gap: 0; }
             .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-            .tabs { flex-wrap: wrap; gap: 2px; }
-            .tab { padding: 9px 10px; font-size: 0.76rem; flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+            .panel-tools { width: 100%; justify-content: space-between; }
+            /* Tabs: horizontal scroll instead of wrapping */
+            .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab { padding: 9px 12px; font-size: 0.76rem; flex: 0 0 auto; white-space: nowrap; }
             /* Prevent iOS zoom on input focus */
             input, select, textarea { font-size: 16px !important; }
             .salary-input { font-size: 16px !important; }
             .modal-content { width: 95% !important; margin: 10px auto; max-height: 90vh; }
+            .modal { width: 95%; margin: 10px; }
+            .modal-body { padding: 16px; }
+            .modal-header { padding: 14px 16px; }
+            .modal-footer { padding: 12px 16px; }
             .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
             .summary-item { padding: 10px 12px; }
             .summary-item .s-value { font-size: 1rem; }
             .summary-item .s-half { font-size: 0.72rem; padding: 3px 7px; }
+            /* Settings inline: stack vertically */
+            .settings-inline { flex-direction: column; gap: 8px; align-items: stretch; padding: 12px 16px; }
+            .settings-inline label { margin-left: 0 !important; }
+            .settings-inline input { width: 100%; }
+            .settings-inline .btn { align-self: flex-end; margin-left: 0 !important; }
+            /* CC summary: 2-col on tablet */
+            .cc-summary-strip { grid-template-columns: 1fr 1fr; }
+            .cc-cards-grid { grid-template-columns: 1fr; }
+            /* Fixed card mobile */
+            .fixed-card { padding: 14px 16px; gap: 10px; }
+            .fixed-card .fc-amount { font-size: 1rem; }
+            /* Expense card mobile */
+            .exp-card { padding: 12px 14px; gap: 10px; }
+            .exp-section-body { padding: 10px; gap: 8px; }
+            /* Toast centered on mobile */
+            .toast { left: 50%; right: auto; transform: translateX(-50%) translateY(100px); }
+            .toast.show { transform: translateX(-50%) translateY(0); }
+            /* Header buttons compact */
+            .header-right .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
+            .header-right .file-input-wrapper .btn { padding: 6px 10px; font-size: 0.72rem; }
+            /* Share box */
+            .share-box { width: 95%; padding: 16px; }
+            /* Search box */
+            #searchInput { width: 100% !important; }
         }
         @media (max-width: 480px) {
-            .container { padding: 8px; }
+            .container { padding: 6px; }
             .summary-strip { grid-template-columns: 1fr; }
             .salary-input { font-size: 16px !important; }
+            .header { padding: 10px 12px; gap: 8px; }
             .header-left h1 { font-size: 1rem; }
             .header-left .subtitle { display: none; }
+            .header-right { gap: 6px; }
             .tabs { gap: 2px; padding: 3px; }
-            .tab { padding: 7px 6px; font-size: 0.7rem; }
+            .tab { padding: 8px 10px; font-size: 0.72rem; }
             .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
             .month-nav button { width: 30px; height: 30px; font-size: 0.85rem; }
             .month-nav .month-label { min-width: 100px; font-size: 0.8rem; }
+            /* CC summary: single column on small phones */
+            .cc-summary-strip { grid-template-columns: 1fr 1fr; }
+            /* Person row */
+            .person-row { gap: 6px; }
+            .summary-item .s-person-val { font-size: 1.1rem; }
+            /* Settings inline tighter */
+            .settings-inline { padding: 10px 12px; gap: 6px; }
+            /* Fixed card tighter */
+            .fixed-card { padding: 12px 14px; gap: 8px; }
+            .fixed-card .fc-info h4 { font-size: 0.85rem; }
+            .fixed-card .fc-info .fc-meta { font-size: 0.7rem; gap: 8px; }
+            /* Expense list tighter */
+            .exp-section-header { padding: 10px 14px; gap: 8px; }
+            .exp-section-body { padding: 8px; gap: 6px; }
+            .exp-card { padding: 10px 12px; gap: 8px; }
+            .ec-desc { font-size: 0.82rem; }
+            .ec-amount-val { font-size: 0.88rem; }
+            /* Filter pills compact */
+            .filter-pills { padding: 4px 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+            .filter-pills::-webkit-scrollbar { display: none; }
+            .filter-pill { flex-shrink: 0; padding: 3px 10px; font-size: 0.68rem; }
+            /* Panel header */
+            .panel-header h2 { font-size: 0.82rem; }
+            /* User profile compact */
+            .user-name { display: none; }
+            .user-profile-btn { padding: 4px 6px; }
+            /* Sync/Import/Export buttons - icon only */
+            .header-right .btn-sm { padding: 6px 8px; font-size: 0.68rem; }
+            /* Fixed summary bar compact */
+            .fixed-summary-bar { flex-direction: column; gap: 4px; padding: 10px 14px; text-align: center; }
+            .fixed-summary-bar .fs-value { font-size: 1rem; }
+            /* Credit card visual compact */
+            .cc-visual { min-height: 140px; padding: 14px 16px; }
+            .cc-balance-val { font-size: 1.2rem; }
+            /* Modal tight */
+            .modal-body { padding: 14px; }
+            .modal-header h3 { font-size: 0.95rem; }
+            /* Category chips compact */
+            .cat-quick { gap: 4px; }
+            .cat-chip { padding: 4px 10px; font-size: 0.72rem; }
         }
         /* iOS safe area */
         @supports (padding: env(safe-area-inset-top)) {
