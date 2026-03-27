@@ -296,6 +296,35 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
+        // Clear any cached user data to allow different user login after logout
+        function clearFirebaseCache() {
+            return new Promise((resolve) => {
+                // Clear all Firebase IndexedDB data (for different user login)
+                if (indexedDB) {
+                    const request = indexedDB.databases ? indexedDB.databases() : [];
+                    if (request.then) {
+                        request.then((dbs) => {
+                            dbs.forEach(db => {
+                                if (db.name && db.name.includes('firebase')) {
+                                    indexedDB.deleteDatabase(db.name);
+                                }
+                            });
+                            resolve();
+                        }).catch(() => resolve());
+                    } else {
+                        resolve();
+                    }
+                } else {
+                    resolve();
+                }
+            });
+        }
+
+        // Clear cache and sign out to ensure fresh login state
+        clearFirebaseCache().then(() => {
+            auth.signOut().catch(() => {});
+        });
+
         function isMobileOrEmbeddedBrowser() {
             const ua = navigator.userAgent || '';
             const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
