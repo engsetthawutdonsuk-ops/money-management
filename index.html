@@ -1382,11 +1382,6 @@
             .settle-main { font-size: 0.95rem; }
             /* Salary: single column */
             .salary-section { grid-template-columns: 1fr; }
-            /* Settings: stack */
-            .settings-inline { flex-direction: column; gap: 8px; align-items: stretch; padding: 10px 12px; }
-            .settings-inline label { margin-left: 0 !important; }
-            .settings-inline input { width: 100%; }
-            .settings-inline .btn { align-self: flex-end; margin-left: 0 !important; }
             /* Charts: single column */
             .charts-grid { grid-template-columns: 1fr; }
             /* Forms */
@@ -1470,10 +1465,6 @@
             .form-row { flex-direction: column; gap: 0; }
             input, select, textarea { font-size: 16px !important; }
             .salary-input { font-size: 16px !important; }
-            /* Settings */
-            .settings-inline { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
-            .settings-inline label { margin-left: 0 !important; }
-            .settings-inline input { flex: 1; min-width: 120px; }
             /* Panel */
             .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
             .panel-tools { width: 100%; justify-content: space-between; }
@@ -1551,26 +1542,6 @@
         .is-touch .filter-pill { min-height: 32px; display: inline-flex; align-items: center; }
         .is-touch .ec-check { width: 28px; height: 28px; }
         .is-touch .cc-card-actions button { width: 32px; height: 32px; }
-
-        /* ===== SETTINGS INLINE ===== */
-        .settings-inline {
-            display: flex; gap: 12px; align-items: center;
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 14px 20px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-        }
-        .settings-inline label {
-            font-size: 0.78rem; font-weight: 700;
-            color: var(--text-light); text-transform: uppercase;
-        }
-        .settings-inline input {
-            padding: 8px 12px; border: 2px solid var(--border);
-            border-radius: 8px; font-size: 0.88rem; outline: none;
-            font-family: inherit; width: 160px;
-        }
-        .settings-inline input:focus { border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -1659,14 +1630,6 @@
 
     <!-- MAIN -->
     <div class="container">
-
-        <!-- PERSON NAMES SETTINGS -->
-        <div class="settings-inline">
-            <label>👤 Person 1:</label>
-            <input type="text" id="person1Name" placeholder="Your name" value="Me" onchange="saveNames()">
-            <label style="margin-left:12px;">👤 Person 2:</label>
-            <input type="text" id="person2Name" placeholder="Partner name" value="My Love" onchange="saveNames()">
-        </div>
 
         <!-- SALARY INPUT -->
         <div class="salary-section">
@@ -2189,7 +2152,7 @@
         // ========== STATE ==========
         let currentMonth, currentYear;
         let data = {}; // keyed by "YYYY-MM"
-        let settings = { person1: 'Me', person2: 'My Love' };
+        let settings = { person1: 'Jame', person2: 'Bam' };
         let fixedExpenses = []; // recurring monthly expenses template
         let creditCards = []; // credit card objects
         let currentCCFilter = 'all';
@@ -2463,17 +2426,7 @@
         }
 
         // ========== NAMES ==========
-        function saveNames() {
-            settings.person1 = document.getElementById('person1Name').value.trim() || 'Me';
-            settings.person2 = document.getElementById('person2Name').value.trim() || 'My Love';
-            localStorage.setItem(settingsKey(), JSON.stringify(settings));
-            applyNames();
-            showToast('Names saved!', 'success');
-        }
-
         function applyNames() {
-            document.getElementById('person1Name').value = settings.person1;
-            document.getElementById('person2Name').value = settings.person2;
             document.getElementById('salaryLabel1').textContent = settings.person1;
             document.getElementById('salaryLabel2').textContent = settings.person2;
             document.getElementById('avatar1').textContent = settings.person1.charAt(0).toUpperCase();
