@@ -443,12 +443,23 @@
         .summary-item .s-person-sub {
             font-size: 0.72rem; color: var(--text-light); font-weight: 600;
         }
-        .s-person-paid {
+        .s-person-breakdown {
             font-size: 0.72rem;
             color: var(--text-light);
             margin-top: 6px;
+            line-height: 1.6;
         }
-        .s-person-paid b { color: var(--text); }
+        .s-person-breakdown b { color: var(--text); }
+        .s-person-breakdown .settle-chip {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.68rem;
+        }
+        .s-person-breakdown .settle-chip.send { background: #fef2f2; color: #dc2626; }
+        .s-person-breakdown .settle-chip.receive { background: #f0fdf4; color: #16a34a; }
+        .s-person-breakdown .settle-chip.even { background: #f8fafc; color: var(--text-light); }
 
         /* ===== SETTLEMENT BANNER ===== */
         .settle-banner {
@@ -1735,7 +1746,7 @@
                     <div class="s-person-val" id="pbRemain1">฿0</div>
                     <div class="s-person-sub" id="pbRemainPct1">Remaining</div>
                 </div>
-                <div class="s-person-paid" id="pbPaid1"></div>
+                <div class="s-person-breakdown" id="pbBreakdown1"></div>
             </div>
             <div class="summary-item person2" id="pbCard2">
                 <div class="s-person-header">
@@ -1746,7 +1757,7 @@
                     <div class="s-person-val" id="pbRemain2">฿0</div>
                     <div class="s-person-sub" id="pbRemainPct2">Remaining</div>
                 </div>
-                <div class="s-person-paid" id="pbPaid2"></div>
+                <div class="s-person-breakdown" id="pbBreakdown2"></div>
             </div>
         </div>
 
@@ -2579,25 +2590,41 @@
             document.getElementById('pbName1').textContent = settings.person1;
             document.getElementById('pbName2').textContent = settings.person2;
 
-            // Person 1 remaining
+            // Person 1 remaining (= final after settlement)
             const r1El = document.getElementById('pbRemain1');
             r1El.textContent = fmtSigned(p1Remain);
             r1El.classList.toggle('negative', p1Remain < 0);
             const p1RemainPct = salary1 > 0 ? ((p1Remain / salary1) * 100).toFixed(0) : 0;
             document.getElementById('pbRemainPct1').textContent = `${p1RemainPct}% of ${fmt(salary1)}`;
 
-            // Person 2 remaining
+            // Person 2 remaining (= final after settlement)
             const r2El = document.getElementById('pbRemain2');
             r2El.textContent = fmtSigned(p2Remain);
             r2El.classList.toggle('negative', p2Remain < 0);
             const p2RemainPct = salary2 > 0 ? ((p2Remain / salary2) * 100).toFixed(0) : 0;
             document.getElementById('pbRemainPct2').textContent = `${p2RemainPct}% of ${fmt(salary2)}`;
 
-            // Per-card paid summary
+            // Per-card breakdown: In hand ± settlement = final
             const p1Name = settings.person1;
             const p2Name = settings.person2;
-            document.getElementById('pbPaid1').innerHTML = `Paid <b>${fmt(p1ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
-            document.getElementById('pbPaid2').innerHTML = `Paid <b>${fmt(p2ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
+            const p1InHand = salary1 - p1ActualPaid;
+            const p2InHand = salary2 - p2ActualPaid;
+            const diff = Math.abs(p1Diff);
+            const bd1 = document.getElementById('pbBreakdown1');
+            const bd2 = document.getElementById('pbBreakdown2');
+
+            if (Math.abs(p1Diff) < 1) {
+                bd1.innerHTML = `Salary <b>${fmt(salary1)}</b> − Paid <b>${fmt(p1ActualPaid)}</b><br><span class="settle-chip even">✓ Settled</span> No transfer`;
+                bd2.innerHTML = `Salary <b>${fmt(salary2)}</b> − Paid <b>${fmt(p2ActualPaid)}</b><br><span class="settle-chip even">✓ Settled</span> No transfer`;
+            } else if (p1Diff < 0) {
+                // Person 1 underpaid → sends money
+                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip send">− send ${fmt(diff)}</span>`;
+                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(diff)}</span>`;
+            } else {
+                // Person 2 underpaid → sends money
+                bd1.innerHTML = `In hand <b>${fmt(p1InHand)}</b> <span class="settle-chip receive">+ receive ${fmt(diff)}</span>`;
+                bd2.innerHTML = `In hand <b>${fmt(p2InHand)}</b> <span class="settle-chip send">− send ${fmt(diff)}</span>`;
+            }
 
             // Settlement banner (single, clear)
             const banner = document.getElementById('settleBanner');
