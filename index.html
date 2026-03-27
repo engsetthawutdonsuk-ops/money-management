@@ -1891,7 +1891,8 @@
 
             <div class="drawer-section">
                 <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" style="width:100%;justify-content:flex-start;" id="drawerDarkBtn">🌙 Dark Mode</button>
-                <button class="btn btn-ghost btn-sm" onclick="forceRefreshData()" style="width:100%;justify-content:flex-start;">🔄 Refresh Data</button>
+                <button class="btn btn-ghost btn-sm" onclick="forceRefreshData()" style="width:100%;justify-content:flex-start;">🔄 Pull from Cloud</button>
+                <button class="btn btn-ghost btn-sm" onclick="forcePushToCloud()" style="width:100%;justify-content:flex-start;">📤 Push to Cloud</button>
                 <button class="btn btn-ghost btn-sm" onclick="forceClearAndReload()" style="width:100%;justify-content:flex-start;color:var(--warning);">⚡ Force Reload</button>
                 <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
             </div>
@@ -2503,6 +2504,7 @@
         let creditCards = []; // credit card objects
         let currentCCFilter = 'all';
         let firebaseDataLoaded = false; // GUARD: prevents saving to Firebase before cloud data is loaded
+        let firebaseDB = null; // Global reference to Firebase database
 
         // ===== Firebase Realtime DB integration =====
         const firebaseConfig = window.FIREBASE_CONFIG;
@@ -2516,6 +2518,7 @@
         try {
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
+            firebaseDB = db; // expose globally
 
             // ===== NOTIFICATION SYSTEM =====
             let notifyReady = false;
@@ -2558,8 +2561,28 @@
                         const cloudData = snapshot.val();
                         if (cloudData) {
                             const cloudTs = cloudData.lastModified || null;
-                            // Merge or overwrite depending on your preference — here we overwrite
-                            data = cloudData.data || cloudData;
+                            const cloudExpData = cloudData.data || {};
+
+                            // SMART SYNC: Don't overwrite local data with empty cloud data
+                            var localHasData = Object.keys(data).length > 0;
+                            var cloudHasExpenses = false;
+                            for (var k in cloudExpData) {
+                                if (cloudExpData[k] && cloudExpData[k].expenses && cloudExpData[k].expenses.length > 0) {
+                                    cloudHasExpenses = true;
+                                    break;
+                                }
+                            }
+
+                            if (!cloudHasExpenses && localHasData && !firebaseDataLoaded) {
+                                // Cloud is empty but local has data — push local to cloud
+                                console.log('📤 Cloud empty, local has data — uploading local data to Firebase');
+                                firebaseDataLoaded = true;
+                                saveToFirebase();
+                                return;
+                            }
+
+                            // Normal sync: cloud → local
+                            data = cloudExpData;
                             if (cloudData.settings) settings = cloudData.settings;
                             if (cloudData.fixedExpenses) fixedExpenses = cloudData.fixedExpenses;
                             if (cloudData.creditCards) creditCards = cloudData.creditCards;
@@ -2577,6 +2600,15 @@
                             showSyncNotification(cloudTs);
                             firstLoad = false;
                             firebaseDataLoaded = true;
+                        } else if (!cloudData) {
+                            // No cloud data at all — push local if we have any
+                            if (Object.keys(data).length > 0) {
+                                console.log('📤 No cloud data — uploading local data to Firebase');
+                                firebaseDataLoaded = true;
+                                saveToFirebase();
+                            } else {
+                                firebaseDataLoaded = true;
+                            }
                         }
                     });
                 } catch (e) { console.warn('Firebase load error', e); }
@@ -4006,24 +4038,18 @@
         function forceRefreshData() {
             showToast('🔄 Refreshing data from cloud...', '');
             try {
-                if (typeof db !== 'undefined' && db) {
-                    db.ref('shared_money_data').once('value').then(function(snapshot) {
+                if (firebaseDB) {
+                    firebaseDB.ref('shared_money_data').once('value').then(function(snapshot) {
                         var cloudData = snapshot.val();
                         if (cloudData) {
-                            data = cloudData.data || cloudData;
+                            data = cloudData.data || {};
                             if (cloudData.settings) settings = cloudData.settings;
                             if (cloudData.fixedExpenses) fixedExpenses = cloudData.fixedExpenses;
                             if (cloudData.creditCards) creditCards = cloudData.creditCards;
                             saveDataQuiet();
-                            if (cloudData.settings) {
-                                localStorage.setItem(settingsKey(), JSON.stringify(settings));
-                            }
-                            if (cloudData.fixedExpenses) {
-                                localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
-                            }
-                            if (cloudData.creditCards) {
-                                localStorage.setItem(ccKey(), JSON.stringify(creditCards));
-                            }
+                            localStorage.setItem(settingsKey(), JSON.stringify(settings));
+                            localStorage.setItem(fixedKey(), JSON.stringify(fixedExpenses));
+                            localStorage.setItem(ccKey(), JSON.stringify(creditCards));
                             firebaseDataLoaded = true;
                             applyNames();
                             updateMonthLabel();
@@ -4046,6 +4072,37 @@
                 console.error('Refresh error:', e);
                 showToast('❌ Refresh error', 'error');
             }
+            toggleDrawer();
+        }
+
+        function forcePushToCloud() {
+            if (Object.keys(data).length === 0) {
+                showToast('⚠️ No local data to push', 'error');
+                toggleDrawer();
+                return;
+            }
+            if (!firebaseDB) {
+                showToast('❌ Firebase not connected', 'error');
+                toggleDrawer();
+                return;
+            }
+            showToast('📤 Pushing local data to cloud...', '');
+            var payload = {
+                data: data,
+                settings: settings,
+                fixedExpenses: fixedExpenses,
+                creditCards: creditCards,
+                lastModified: new Date().toISOString()
+            };
+            firebaseDB.ref('shared_money_data').set(payload).then(function() {
+                localStorage.setItem('salaryApp_lastModified', payload.lastModified);
+                firebaseDataLoaded = true;
+                updateSyncTimeDisplay();
+                showToast('✅ Data pushed to cloud!', 'success');
+            }).catch(function(err) {
+                console.error('Push failed:', err);
+                showToast('❌ Push failed - check connection', 'error');
+            });
             toggleDrawer();
         }
 
@@ -4100,6 +4157,15 @@
             renderAll();
             setupEvents();
             updateSyncTimeDisplay();
+
+            // If Firebase hasn't synced in 3 seconds, mark as loaded
+            // so user can still save data normally
+            setTimeout(function() {
+                if (!firebaseDataLoaded) {
+                    console.log('⏳ Firebase sync timeout — enabling saves with local data');
+                    firebaseDataLoaded = true;
+                }
+            }, 3000);
         }
 
         init();
