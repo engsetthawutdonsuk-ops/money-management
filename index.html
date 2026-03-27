@@ -14,9 +14,10 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- Firebase (Realtime Database compat) -->
+    <!-- Firebase (Realtime Database & Auth compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -103,6 +104,94 @@
         }
         .back-link:hover { background: rgba(255,255,255,0.15); color: white; }
         .header-right { display: flex; gap: 10px; align-items: center; }
+
+        /* ===== USER PROFILE ===== */
+        .user-profile-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .user-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 12px 6px 6px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .user-profile-btn:hover {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .user-photo {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid rgba(255,255,255,0.4);
+        }
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 200px;
+            margin-top: 8px;
+            overflow: hidden;
+            animation: slideDown 0.2s ease-out;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .user-menu-email {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            word-break: break-all;
+        }
+        .user-menu-divider {
+            height: 1px;
+            background: var(--border);
+        }
+        .user-menu-item {
+            width: 100%;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            text-align: left;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .user-menu-item:hover {
+            background: #f3f4f6;
+            color: var(--primary);
+        }
+        .logout-item {
+            color: var(--danger);
+        }
+        .logout-item:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
 
         /* ===== MONTH SELECTOR ===== */
         .month-nav {
@@ -1377,6 +1466,17 @@
             </div>
         </div>
         <div class="header-right">
+            <div class="user-profile-wrapper">
+                <button class="user-profile-btn" id="userProfileBtn" onclick="toggleUserMenu()">
+                    <img id="userPhoto" src="" alt="User" class="user-photo">
+                    <span id="userName" class="user-name">User</span>
+                </button>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <div class="user-menu-email" id="userMenuEmail">user@example.com</div>
+                    <div class="user-menu-divider"></div>
+                    <button onclick="logoutUser()" class="user-menu-item logout-item">🚪 Logout</button>
+                </div>
+            </div>
             <div class="month-nav">
                 <button onclick="changeMonth(-1)" title="Previous month">◀</button>
                 <span class="month-label" id="monthLabel">February 2026</span>
@@ -4257,6 +4357,70 @@
                 </div>`;
             }).filter(Boolean).join('');
         }
+
+        // ===== AUTHENTICATION FUNCTIONS =====
+        const auth = firebase.auth();
+        let currentUser = null;
+
+        // Check authentication on page load
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                updateUserProfile(user);
+                loadAppData(); // Load app data once authenticated
+            } else {
+                // No user logged in, redirect to login page
+                window.location.href = 'login.html';
+            }
+        });
+
+        function updateUserProfile(user) {
+            if (!user) return;
+            
+            const userName = document.getElementById('userName');
+            const userPhoto = document.getElementById('userPhoto');
+            const userMenuEmail = document.getElementById('userMenuEmail');
+
+            if (userName) userName.textContent = user.displayName || user.email.split('@')[0];
+            if (userPhoto) {
+                userPhoto.src = user.photoURL || '';
+                userPhoto.onerror = () => {
+                    userPhoto.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=6366f1&color=fff`;
+                };
+            }
+            if (userMenuEmail) userMenuEmail.textContent = user.email;
+        }
+
+        function toggleUserMenu() {
+            const userMenu = document.getElementById('userMenu');
+            if (userMenu.style.display === 'none') {
+                userMenu.style.display = 'block';
+            } else {
+                userMenu.style.display = 'none';
+            }
+        }
+
+        function logoutUser() {
+            if (confirm('Are you sure you want to logout?')) {
+                auth.signOut().then(() => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'login.html';
+                }).catch((error) => {
+                    console.error('Logout error:', error);
+                    alert('Error logging out. Please try again.');
+                });
+            }
+        }
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const userMenu = document.getElementById('userMenu');
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            if (userMenu && !userMenu.contains(e.target) && !userProfileBtn.contains(e.target)) {
+                userMenu.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
