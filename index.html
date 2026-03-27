@@ -100,35 +100,34 @@
 
         /* ===== HEADER ===== */
         .header {
-            background: linear-gradient(135deg, #f8fafc, #eef2ff, #faf5ff);
-            color: #334155;
-            padding: 16px 24px;
+            background: #1877f2;
+            color: white;
+            padding: 14px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid #e2e8f0;
         }
         .header-left { display: flex; align-items: center; gap: 14px; }
-        .header-left h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; color: #6366f1; }
-        .header-left .subtitle { font-size: 0.7rem; opacity: 1; margin-top: 2px; font-weight: 400; letter-spacing: 0.2px; color: #94a3b8; }
+        .header-left h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; color: #fff; }
+        .header-left .subtitle { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; font-weight: 400; letter-spacing: 0.2px; color: #e3f0ff; }
         .back-link {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: #6366f1;
+            color: rgba(255,255,255,0.9);
             text-decoration: none;
             font-size: 0.82rem;
             font-weight: 600;
             padding: 6px 14px;
             border-radius: 8px;
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid rgba(255,255,255,0.3);
             transition: all 0.2s;
         }
-        .back-link:hover { background: #eef2ff; color: #4f46e5; }
+        .back-link:hover { background: rgba(255,255,255,0.15); color: #fff; }
         .header-right { display: flex; gap: 10px; align-items: center; }
 
         /* ===== USER PROFILE ===== */
@@ -141,9 +140,9 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: #ffffff;
-            border: 1.5px solid #e2e8f0;
-            color: #475569;
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.25);
+            color: #fff;
             padding: 6px 12px 6px 6px;
             border-radius: 24px;
             cursor: pointer;
@@ -152,15 +151,15 @@
             font-size: 0.85rem;
         }
         .user-profile-btn:hover {
-            background: #eef2ff;
-            border-color: #c7d2fe;
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.4);
         }
         .user-photo {
             width: 28px;
             height: 28px;
             border-radius: 50%;
             object-fit: cover;
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid rgba(255,255,255,0.4);
         }
         .user-menu {
             position: absolute;
@@ -229,23 +228,25 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            border: 1.5px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.1);
-            color: white;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.15);
+            color: #fff;
             font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .month-nav button:hover { background: rgba(255,255,255,0.25); }
+        .month-nav button:hover { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.5); }
         .month-nav .month-label {
             font-size: 0.95rem;
             font-weight: 700;
             min-width: 160px;
             text-align: center;
             user-select: none;
+            color: #fff;
         }
 
         /* ===== BUTTONS ===== */
