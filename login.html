@@ -303,11 +303,15 @@
             return isMobile || isEmbedded;
         }
 
-        // Check if user is already logged in
+        // Check if user is already logged in (with delay to let Firebase restore state)
+        let authCheckDone = false;
         auth.onAuthStateChanged((user) => {
-            if (user) {
-                // User is logged in, redirect to main app
-                window.location.href = 'index.html';
+            if (!authCheckDone) {
+                authCheckDone = true;
+                if (user) {
+                    // User is logged in, redirect to main app
+                    window.location.href = 'index.html';
+                }
             }
         });
 

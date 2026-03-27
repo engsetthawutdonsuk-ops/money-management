@@ -4355,15 +4355,30 @@
         // ===== AUTHENTICATION FUNCTIONS =====
         const auth = firebase.auth();
         let currentUser = null;
+        let authCheckDone = false;
 
         // Check authentication on page load
         auth.onAuthStateChanged((user) => {
+            authCheckDone = true;
             if (user) {
                 currentUser = user;
                 updateUserProfile(user);
             } else {
-                // No user logged in, redirect to login page
-                window.location.href = 'login.html';
+                // Check localStorage as backup (in case of timing issues after login)
+                const userEmail = localStorage.getItem('user_email');
+                if (userEmail) {
+                    // User was just logged in but auth state hasn't synced yet
+                    // Set a flag and wait a moment for auth to sync
+                    setTimeout(() => {
+                        if (!currentUser) {
+                            // Auth still hasn't synced, redirect to login
+                            window.location.href = 'login.html';
+                        }
+                    }, 500);
+                } else {
+                    // No user logged in, redirect to login page
+                    window.location.href = 'login.html';
+                }
             }
         });
 
