@@ -6,7 +6,7 @@
     <title>💰 Money Management</title>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#818cf8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Money Mgmt">
@@ -45,14 +45,14 @@
     </script>
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-light: #a5b4fc;
-            --primary-dark: #4338ca;
-            --accent: #ec4899;
-            --accent-light: #f9a8d4;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --primary: #818cf8;
+            --primary-light: #c7d2fe;
+            --primary-dark: #6366f1;
+            --accent: #f472b6;
+            --accent-light: #fbcfe8;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
             --bg: #f0f4ff;
             --card-bg: #ffffff;
             --text: #1e293b;
@@ -63,12 +63,12 @@
             --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.08);
             --radius: 16px;
             --radius-sm: 10px;
-            --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
-            --gradient-2: linear-gradient(135deg, #ec4899, #f43f5e);
-            --gradient-3: linear-gradient(135deg, #22c55e, #14b8a6);
-            --gradient-4: linear-gradient(135deg, #f59e0b, #f97316);
-            --person1-color: #6366f1;
-            --person2-color: #ec4899;
+            --gradient-1: linear-gradient(135deg, #818cf8, #a78bfa);
+            --gradient-2: linear-gradient(135deg, #f472b6, #fb7185);
+            --gradient-3: linear-gradient(135deg, #4ade80, #2dd4bf);
+            --gradient-4: linear-gradient(135deg, #fbbf24, #fb923c);
+            --person1-color: #818cf8;
+            --person2-color: #f472b6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -216,7 +216,7 @@
         }
         .logout-item:hover {
             background: #fee2e2;
-            color: #991b1b;
+            color: #f87171;
         }
 
         /* ===== MONTH SELECTOR ===== */
@@ -393,8 +393,8 @@
         .summary-item.expense::before { background: var(--gradient-2); }
         .summary-item.balance::before { background: var(--gradient-1); }
         .summary-item.savings::before { background: var(--gradient-4); }
-        .summary-item.saving-target::before { background: linear-gradient(180deg, #06b6d4, #0891b2); }
-        .summary-item.saving-target .s-value { color: #0891b2; }
+        .summary-item.saving-target::before { background: linear-gradient(180deg, #67e8f9, #22d3ee); }
+        .summary-item.saving-target .s-value { color: #22d3ee; }
         .summary-item .s-label {
             font-size: 0.72rem;
             font-weight: 700;
@@ -414,7 +414,7 @@
         .summary-item .s-sub { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
 
         .summary-item.person1::before { background: var(--gradient-1); width: 5px; }
-        .summary-item.person2::before { background: linear-gradient(180deg, #ec4899, #f43f5e); width: 5px; }
+        .summary-item.person2::before { background: linear-gradient(180deg, #f472b6, #fb7185); width: 5px; }
         .person-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -460,8 +460,8 @@
             font-weight: 700;
             font-size: 0.68rem;
         }
-        .s-person-breakdown .settle-chip.send { background: #fef2f2; color: #dc2626; }
-        .s-person-breakdown .settle-chip.receive { background: #f0fdf4; color: #16a34a; }
+        .s-person-breakdown .settle-chip.send { background: #fef2f2; color: #f87171; }
+        .s-person-breakdown .settle-chip.receive { background: #f0fdf4; color: #4ade80; }
         .s-person-breakdown .settle-chip.even { background: #f8fafc; color: var(--text-light); }
 
         /* ===== SETTLEMENT BANNER ===== */
@@ -480,13 +480,13 @@
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--primary), #a78bfa);
+            background: linear-gradient(90deg, var(--primary), #c4b5fd);
         }
         .settle-banner.owes::before {
-            background: linear-gradient(90deg, #ef4444, #f97316);
+            background: linear-gradient(90deg, #fca5a5, #fdba74);
         }
         .settle-banner.even::before {
-            background: linear-gradient(90deg, #22c55e, #10b981);
+            background: linear-gradient(90deg, #86efac, #6ee7b7);
         }
         .settle-main {
             font-size: 1.05rem;
@@ -494,7 +494,7 @@
             margin-bottom: 4px;
         }
         .settle-banner.owes .settle-main { color: var(--danger); }
-        .settle-banner.even .settle-main { color: #16a34a; }
+        .settle-banner.even .settle-main { color: #4ade80; }
         .settle-detail {
             font-size: 0.78rem;
             color: var(--text-light);
@@ -510,27 +510,27 @@
             font-size: 0.82rem;
             font-weight: 900;
             color: #fff;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+            background: linear-gradient(135deg, #818cf8, #a78bfa, #c4b5fd);
             border: none;
             letter-spacing: 0.3px;
             vertical-align: middle;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4), 0 0 12px rgba(139, 92, 246, 0.25);
+            box-shadow: 0 2px 8px rgba(129, 140, 248, 0.4), 0 0 12px rgba(167, 139, 250, 0.25);
             animation: halfPulse 2.5s ease-in-out infinite;
             text-shadow: 0 1px 2px rgba(0,0,0,0.15);
         }
         @keyframes halfPulse {
-            0%, 100% { box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4), 0 0 12px rgba(139, 92, 246, 0.25); }
-            50% { box-shadow: 0 2px 12px rgba(99, 102, 241, 0.6), 0 0 20px rgba(139, 92, 246, 0.4); }
+            0%, 100% { box-shadow: 0 2px 8px rgba(129, 140, 248, 0.4), 0 0 12px rgba(167, 139, 250, 0.25); }
+            50% { box-shadow: 0 2px 12px rgba(129, 140, 248, 0.6), 0 0 20px rgba(167, 139, 250, 0.4); }
         }
         .summary-item .s-half.negative {
             color: #fff;
-            background: linear-gradient(135deg, #ef4444, #dc2626, #f87171);
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4), 0 0 12px rgba(220, 38, 38, 0.25);
+            background: linear-gradient(135deg, #fca5a5, #f87171, #fecdd3);
+            box-shadow: 0 2px 8px rgba(252, 165, 165, 0.4), 0 0 12px rgba(248, 113, 113, 0.25);
         }
         .summary-item .s-half.negative { animation-name: halfPulseNeg; }
         @keyframes halfPulseNeg {
-            0%, 100% { box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4), 0 0 12px rgba(220, 38, 38, 0.25); }
-            50% { box-shadow: 0 2px 12px rgba(239, 68, 68, 0.6), 0 0 20px rgba(220, 38, 38, 0.4); }
+            0%, 100% { box-shadow: 0 2px 8px rgba(252, 165, 165, 0.4), 0 0 12px rgba(248, 113, 113, 0.25); }
+            50% { box-shadow: 0 2px 12px rgba(252, 165, 165, 0.6), 0 0 20px rgba(248, 113, 113, 0.4); }
         }
 
         /* ===== TABS ===== */
@@ -707,7 +707,7 @@
         .tbd-pill {
             display: inline-block;
             background: linear-gradient(135deg,#fff7ed,#ffedd5);
-            color: #b45309;
+            color: #d97706;
             font-weight: 800;
             padding: 6px 10px;
             border-radius: 12px;
@@ -764,9 +764,9 @@
             font-size: 0.6rem;
             font-weight: 700;
         }
-        .person-tag.p1 { background: #eef2ff; color: #4338ca; }
-        .person-tag.p2 { background: #fdf2f8; color: #be185d; }
-        .person-tag.shared { background: #f0fdf4; color: #166534; }
+        .person-tag.p1 { background: #eef2ff; color: #818cf8; }
+        .person-tag.p2 { background: #fdf2f8; color: #f472b6; }
+        .person-tag.shared { background: #f0fdf4; color: #4ade80; }
 
         /* ===== CHARTS ===== */
         .charts-grid {
@@ -890,7 +890,7 @@
             font-size: 0.55rem;
             font-weight: 800;
             background: #fef3c7;
-            color: #92400e;
+            color: #d97706;
             vertical-align: middle;
         }
 
@@ -944,10 +944,10 @@
             margin-bottom: 16px;
         }
         .fixed-summary-bar .fs-label {
-            font-size: 0.78rem; font-weight: 700; color: #92400e; text-transform: uppercase;
+            font-size: 0.78rem; font-weight: 700; color: #d97706; text-transform: uppercase;
         }
         .fixed-summary-bar .fs-value {
-            font-size: 1.2rem; font-weight: 800; color: #78350f;
+            font-size: 1.2rem; font-weight: 800; color: #b45309;
         }
 
         /* ===== PAID STATUS (legacy — kept for reference, new styles in compact cards above) ===== */
@@ -1005,7 +1005,7 @@
             border-radius: 10px;
             font-size: 0.84rem;
             font-weight: 800;
-            color: #92400e;
+            color: #d97706;
             cursor: pointer;
             transition: transform 0.12s ease, box-shadow 0.12s ease;
             box-shadow: 0 6px 12px rgba(245,158,11,0.08);
@@ -1045,27 +1045,27 @@
         .cc-cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:14px; }
 
         .cc-visual {
-            border-radius: 14px; padding:18px 20px; color:white;
+            border-radius: 14px; padding:18px 20px; color:#1e293b;
             position:relative; overflow:hidden; cursor:pointer;
             transition:transform 0.2s, box-shadow 0.2s;
             min-height:160px; display:flex; flex-direction:column; justify-content:space-between;
         }
         .cc-visual:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
-        .cc-visual.selected { outline:3px solid white; outline-offset:2px; box-shadow:0 0 0 6px rgba(99,102,241,0.3); }
+        .cc-visual.selected { outline:3px solid white; outline-offset:2px; box-shadow:0 0 0 6px rgba(129,140,248,0.3); }
         .cc-visual::before {
             content:''; position:absolute; top:-30%; right:-20%; width:160px; height:160px;
-            border-radius:50%; background:rgba(255,255,255,0.1);
+            border-radius:50%; background:rgba(0,0,0,0.06);
         }
         .cc-visual::after {
             content:''; position:absolute; bottom:-20%; left:-10%; width:120px; height:120px;
-            border-radius:50%; background:rgba(255,255,255,0.06);
+            border-radius:50%; background:rgba(0,0,0,0.04);
         }
         .cc-top { display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1; }
         .cc-card-name { font-size:0.95rem; font-weight:800; }
         .cc-card-owner { font-size:0.65rem; opacity:0.8; }
         .cc-card-actions { display:flex; gap:4px; }
-        .cc-card-actions button { background:rgba(255,255,255,0.2); border:none; border-radius:6px; color:white; width:26px; height:26px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.72rem; transition:background 0.15s; }
-        .cc-card-actions button:hover { background:rgba(255,255,255,0.35); }
+        .cc-card-actions button { background:rgba(0,0,0,0.08); border:none; border-radius:6px; color:#1e293b; width:26px; height:26px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.72rem; transition:background 0.15s; }
+        .cc-card-actions button:hover { background:rgba(0,0,0,0.15); }
         .cc-mid { position:relative; z-index:1; margin:12px 0 8px; }
         .cc-balance-label { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.5px; opacity:0.8; }
         .cc-balance-val { font-size:1.4rem; font-weight:800; }
@@ -1082,8 +1082,8 @@
             padding:10px 16px; border-radius:var(--radius-sm);
             margin-bottom:10px; font-size:0.8rem; font-weight:700;
         }
-        .cc-due-alert.warn { background:#fef3c7; color:#92400e; border:1.5px solid #fde68a; }
-        .cc-due-alert.urgent { background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
+        .cc-due-alert.warn { background:#fef3c7; color:#d97706; border:1.5px solid #fde68a; }
+        .cc-due-alert.urgent { background:#fee2e2; color:#f87171; border:1.5px solid #fca5a5; }
         .cc-due-alert .cc-alert-card { font-weight:800; }
 
         .cc-tx-card {
@@ -1800,7 +1800,7 @@
                     <div class="fs-label">📌 Total Recurring Bills per Month</div>
                     <div class="fs-value" id="fixedTotal">฿0</div>
                 </div>
-                <div style="margin-left:auto; font-size:0.78rem; color:#92400e;">
+                <div style="margin-left:auto; font-size:0.78rem; color:#d97706;">
                     These bills are automatically added to every new month
                 </div>
             </div>
@@ -2146,10 +2146,10 @@
         ];
 
         const COLORS = [
-            '#6366f1','#ec4899','#22c55e','#f59e0b','#ef4444',
-            '#8b5cf6','#06b6d4','#f97316','#14b8a6','#e11d48',
-            '#84cc16','#a855f7','#0ea5e9','#d946ef','#78716c',
-            '#facc15','#64748b'
+            '#818cf8','#f472b6','#4ade80','#fbbf24','#f87171',
+            '#a78bfa','#22d3ee','#fb923c','#2dd4bf','#fb7185',
+            '#a3e635','#c084fc','#38bdf8','#e879f9','#a8a29e',
+            '#fde047','#94a3b8'
         ];
 
         // ========== STATE ==========
@@ -2217,14 +2217,14 @@
         }
 
         const CC_COLORS = [
-            'linear-gradient(135deg,#1e293b,#334155)',
-            'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            'linear-gradient(135deg,#ec4899,#f43f5e)',
-            'linear-gradient(135deg,#0891b2,#06b6d4)',
-            'linear-gradient(135deg,#059669,#10b981)',
-            'linear-gradient(135deg,#d97706,#f59e0b)',
-            'linear-gradient(135deg,#7c3aed,#a78bfa)',
-            'linear-gradient(135deg,#dc2626,#ef4444)',
+            'linear-gradient(135deg,#c7d2fe,#ddd6fe)',
+            'linear-gradient(135deg,#818cf8,#a78bfa)',
+            'linear-gradient(135deg,#f472b6,#fb7185)',
+            'linear-gradient(135deg,#22d3ee,#67e8f9)',
+            'linear-gradient(135deg,#34d399,#6ee7b7)',
+            'linear-gradient(135deg,#fbbf24,#fcd34d)',
+            'linear-gradient(135deg,#a78bfa,#c4b5fd)',
+            'linear-gradient(135deg,#fca5a5,#fecdd3)',
         ];
 
         // ========== HELPERS ==========
@@ -3225,7 +3225,7 @@
                     labels: [settings.person1, settings.person2, 'Shared'],
                     datasets: [{
                         data: [p1Total, p2Total, sharedTotal],
-                        backgroundColor: ['#6366f1', '#ec4899', '#22c55e'],
+                        backgroundColor: ['#818cf8', '#f472b6', '#4ade80'],
                         borderWidth: 3,
                         borderColor: '#fff'
                     }]
