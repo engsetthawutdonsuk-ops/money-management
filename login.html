@@ -15,6 +15,30 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script>
+    /* ===== DEVICE DETECTION ===== */
+    (function() {
+        function detectDevice() {
+            var w = window.innerWidth;
+            var ua = navigator.userAgent || '';
+            var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            var isMobileUA = /Android|iPhone|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua);
+            var isTabletUA = /iPad|tablet|Kindle|Silk/i.test(ua) || (isTouchDevice && w >= 600 && w <= 1200);
+            var device = 'desktop';
+            if (w <= 480 || (isMobileUA && w <= 768)) device = 'phone';
+            else if (w <= 1024 || isTabletUA) device = 'tablet';
+            else if (w <= 1440) device = 'laptop';
+            var b = document.documentElement;
+            b.classList.remove('device-phone','device-tablet','device-laptop','device-desktop');
+            b.classList.add('device-' + device);
+            if (isTouchDevice) b.classList.add('is-touch');
+            else b.classList.remove('is-touch');
+        }
+        detectDevice();
+        window.addEventListener('resize', detectDevice);
+        window.addEventListener('orientationchange', function(){ setTimeout(detectDevice, 150); });
+    })();
+    </script>
     <style>
         :root {
             --primary: #6366f1;
@@ -241,6 +265,51 @@
 
         .google-login-btn.loading .loading-spinner {
             display: block;
+        }
+
+        /* ===== DEVICE-ADAPTIVE STYLES ===== */
+
+        /* Phone: tighter padding, bigger touch targets */
+        @media (max-width: 480px) {
+            .login-container { padding: 12px; }
+            .login-card { padding: 32px 20px; }
+            .logo-icon { font-size: 2.8rem; }
+            .logo-text h1 { font-size: 1.5rem; }
+            .logo-text p { font-size: 0.88rem; }
+            .login-description { font-size: 0.88rem; margin-bottom: 24px; }
+            .google-login-btn { padding: 16px 20px; font-size: 1rem; min-height: 52px; }
+            .footer-text { font-size: 0.78rem; }
+        }
+
+        /* Tablet: centered card, wider */
+        @media (min-width: 481px) and (max-width: 1024px) {
+            .login-container { max-width: 440px; }
+            .login-card { padding: 42px 32px; }
+            .google-login-btn { min-height: 50px; }
+        }
+
+        /* Desktop/Laptop: card shadow + hover effect */
+        @media (min-width: 1025px) {
+            .login-container { max-width: 460px; }
+            .login-card {
+                padding: 52px 40px;
+                transition: transform 0.3s, box-shadow 0.3s;
+            }
+            .login-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px -10px rgba(0,0,0,0.12);
+            }
+        }
+
+        /* Touch devices: bigger button */
+        .is-touch .google-login-btn { min-height: 52px; }
+
+        /* iOS safe area */
+        @supports (padding: env(safe-area-inset-top)) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
         }
     </style>
 </head>

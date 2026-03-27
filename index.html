@@ -19,6 +19,31 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script>
+    /* ===== DEVICE DETECTION ===== */
+    (function() {
+        function detectDevice() {
+            var w = window.innerWidth;
+            var ua = navigator.userAgent || '';
+            var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            var isMobileUA = /Android|iPhone|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua);
+            var isTabletUA = /iPad|tablet|Kindle|Silk/i.test(ua) || (isTouchDevice && w >= 600 && w <= 1200);
+            var device = 'desktop';
+            if (w <= 480 || (isMobileUA && w <= 768)) device = 'phone';
+            else if (w <= 1024 || isTabletUA) device = 'tablet';
+            else if (w <= 1440) device = 'laptop';
+            var b = document.documentElement;
+            b.classList.remove('device-phone','device-tablet','device-laptop','device-desktop');
+            b.classList.add('device-' + device);
+            if (isTouchDevice) b.classList.add('is-touch');
+            else b.classList.remove('is-touch');
+            b.setAttribute('data-device', device);
+        }
+        detectDevice();
+        window.addEventListener('resize', detectDevice);
+        window.addEventListener('orientationchange', function(){ setTimeout(detectDevice, 150); });
+    })();
+    </script>
     <style>
         :root {
             --primary: #6366f1;
@@ -1362,119 +1387,276 @@
             padding: 0 4px;
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .container { padding: 14px; }
-            .salary-section { grid-template-columns: 1fr; }
-            .summary-strip { grid-template-columns: 1fr 1fr; }
-            .person-row { grid-template-columns: 1fr; gap: 8px; }
-            .charts-grid { grid-template-columns: 1fr; }
-            .header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
-            .header-left h1 { font-size: 1.15rem; }
-            .header-right { width: 100%; justify-content: center; flex-wrap: wrap; gap: 8px; }
-            .month-nav .month-label { min-width: 120px; font-size: 0.85rem; }
-            table { font-size: 0.78rem; }
-            thead th, tbody td { padding: 8px 8px; }
-            .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .form-row { flex-direction: column; gap: 0; }
-            .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-            .panel-tools { width: 100%; justify-content: space-between; }
-            /* Tabs: horizontal scroll instead of wrapping */
-            .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
-            .tabs::-webkit-scrollbar { display: none; }
-            .tab { padding: 9px 12px; font-size: 0.76rem; flex: 0 0 auto; white-space: nowrap; }
-            /* Prevent iOS zoom on input focus */
-            input, select, textarea { font-size: 16px !important; }
-            .salary-input { font-size: 16px !important; }
-            .modal-content { width: 95% !important; margin: 10px auto; max-height: 90vh; }
-            .modal { width: 95%; margin: 10px; }
-            .modal-body { padding: 16px; }
-            .modal-header { padding: 14px 16px; }
-            .modal-footer { padding: 12px 16px; }
-            .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+        /* ===== DEVICE INDICATOR (dev — remove in production) ===== */
+
+        /* ===== MOBILE HAMBURGER MENU ===== */
+        .mobile-menu-btn {
+            display: none;
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.3);
+            color: white;
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .mobile-menu-btn:hover { background: rgba(255,255,255,0.25); }
+        .header-drawer {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 150;
+        }
+        .header-drawer.open { display: block; }
+        .drawer-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+        }
+        .drawer-panel {
+            position: absolute; top: 0; right: 0;
+            width: 280px; max-width: 85vw;
+            height: 100%;
+            background: var(--card-bg);
+            box-shadow: var(--shadow-lg);
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            overflow-y: auto;
+            animation: slideInRight 0.25s ease;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .drawer-panel .drawer-title {
+            font-size: 0.92rem; font-weight: 800; color: var(--text);
+            padding-bottom: 10px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .drawer-close {
+            background: none; border: none; font-size: 1.3rem;
+            cursor: pointer; color: var(--text-light); padding: 4px;
+        }
+        .drawer-panel .btn { width: 100%; justify-content: flex-start; }
+        .drawer-panel .month-nav { justify-content: center; width: 100%; }
+        .drawer-panel .month-nav .month-label { color: var(--text); }
+        .drawer-panel .month-nav button { background: var(--bg); color: var(--text); border-color: var(--border); }
+        .drawer-section {
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+
+        /* ===== BOTTOM TAB BAR (Phone only) ===== */
+        .bottom-tab-bar {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+            z-index: 110;
+            padding: 4px 0;
+        }
+        .bottom-tab-bar-inner {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .btab {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 2px;
+            padding: 6px 4px;
+            border: none; background: none;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.62rem;
+            font-weight: 700;
+            font-family: inherit;
+            transition: color 0.15s;
+            min-width: 52px;
+        }
+        .btab .btab-icon { font-size: 1.2rem; }
+        .btab.active { color: var(--primary); }
+        .btab.active .btab-icon { transform: scale(1.1); }
+
+        /* ===== RESPONSIVE — PHONE (≤480px) ===== */
+        @media (max-width: 480px) {
+            /* Body padding for bottom bar */
+            body { padding-bottom: 64px; }
+            .bottom-tab-bar { display: block; }
+            /* Hide desktop tabs on phone */
+            .tabs { display: none !important; }
+            /* Header: compact, single row */
+            .header { padding: 10px 12px; gap: 6px; }
+            .header-left h1 { font-size: 1rem; }
+            .header-left .subtitle { display: none; }
+            .mobile-menu-btn { display: flex; }
+            .header-right { display: none; }
+            /* Container tight */
+            .container { padding: 8px; }
+            /* Summary: single column */
+            .summary-strip { grid-template-columns: 1fr; gap: 6px; }
             .summary-item { padding: 10px 12px; }
             .summary-item .s-value { font-size: 1rem; }
             .summary-item .s-half { font-size: 0.72rem; padding: 3px 7px; }
-            /* Settings inline: stack vertically */
-            .settings-inline { flex-direction: column; gap: 8px; align-items: stretch; padding: 12px 16px; }
+            /* Person row: single column */
+            .person-row { grid-template-columns: 1fr; gap: 6px; }
+            .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .summary-item .s-person-val { font-size: 1.1rem; }
+            /* Salary: single column */
+            .salary-section { grid-template-columns: 1fr; }
+            /* Settings: stack */
+            .settings-inline { flex-direction: column; gap: 8px; align-items: stretch; padding: 10px 12px; }
             .settings-inline label { margin-left: 0 !important; }
             .settings-inline input { width: 100%; }
             .settings-inline .btn { align-self: flex-end; margin-left: 0 !important; }
-            /* CC summary: 2-col on tablet */
-            .cc-summary-strip { grid-template-columns: 1fr 1fr; }
-            .cc-cards-grid { grid-template-columns: 1fr; }
-            /* Fixed card mobile */
-            .fixed-card { padding: 14px 16px; gap: 10px; }
-            .fixed-card .fc-amount { font-size: 1rem; }
-            /* Expense card mobile */
-            .exp-card { padding: 12px 14px; gap: 10px; }
-            .exp-section-body { padding: 10px; gap: 8px; }
-            /* Toast centered on mobile */
-            .toast { left: 50%; right: auto; transform: translateX(-50%) translateY(100px); }
-            .toast.show { transform: translateX(-50%) translateY(0); }
-            /* Header buttons compact */
-            .header-right .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
-            .header-right .file-input-wrapper .btn { padding: 6px 10px; font-size: 0.72rem; }
-            /* Share box */
-            .share-box { width: 95%; padding: 16px; }
-            /* Search box */
-            #searchInput { width: 100% !important; }
-        }
-        @media (max-width: 480px) {
-            .container { padding: 6px; }
-            .summary-strip { grid-template-columns: 1fr; }
+            /* Charts: single column */
+            .charts-grid { grid-template-columns: 1fr; }
+            /* Forms */
+            .form-row { flex-direction: column; gap: 0; }
+            input, select, textarea { font-size: 16px !important; }
             .salary-input { font-size: 16px !important; }
-            .header { padding: 10px 12px; gap: 8px; }
-            .header-left h1 { font-size: 1rem; }
-            .header-left .subtitle { display: none; }
-            .header-right { gap: 6px; }
-            .tabs { gap: 2px; padding: 3px; }
-            .tab { padding: 8px 10px; font-size: 0.72rem; }
-            .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
-            .month-nav button { width: 30px; height: 30px; font-size: 0.85rem; }
-            .month-nav .month-label { min-width: 100px; font-size: 0.8rem; }
-            /* CC summary: single column on small phones */
-            .cc-summary-strip { grid-template-columns: 1fr 1fr; }
-            /* Person row */
-            .person-row { gap: 6px; }
-            .summary-item .s-person-val { font-size: 1.1rem; }
-            /* Settings inline tighter */
-            .settings-inline { padding: 10px 12px; gap: 6px; }
-            /* Fixed card tighter */
+            /* Panel */
+            .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .panel-tools { width: 100%; justify-content: space-between; }
+            .panel-header h2 { font-size: 0.82rem; }
+            .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            #searchInput { width: 100% !important; }
+            /* Table */
+            table { font-size: 0.78rem; }
+            thead th, tbody td { padding: 8px 6px; }
+            /* CC */
+            .cc-summary-strip { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .cc-cards-grid { grid-template-columns: 1fr; }
+            .cc-visual { min-height: 140px; padding: 14px 16px; }
+            .cc-balance-val { font-size: 1.2rem; }
+            /* Fixed */
             .fixed-card { padding: 12px 14px; gap: 8px; }
             .fixed-card .fc-info h4 { font-size: 0.85rem; }
-            .fixed-card .fc-info .fc-meta { font-size: 0.7rem; gap: 8px; }
-            /* Expense list tighter */
+            .fixed-card .fc-info .fc-meta { font-size: 0.7rem; }
+            .fixed-card .fc-amount { font-size: 1rem; }
+            .fixed-summary-bar { flex-direction: column; gap: 4px; padding: 10px 14px; text-align: center; }
+            .fixed-summary-bar .fs-value { font-size: 1rem; }
+            /* Expense cards */
             .exp-section-header { padding: 10px 14px; gap: 8px; }
             .exp-section-body { padding: 8px; gap: 6px; }
             .exp-card { padding: 10px 12px; gap: 8px; }
             .ec-desc { font-size: 0.82rem; }
             .ec-amount-val { font-size: 0.88rem; }
-            /* Filter pills compact */
+            /* Filter pills: scroll */
             .filter-pills { padding: 4px 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
             .filter-pills::-webkit-scrollbar { display: none; }
-            .filter-pill { flex-shrink: 0; padding: 3px 10px; font-size: 0.68rem; }
-            /* Panel header */
-            .panel-header h2 { font-size: 0.82rem; }
+            .filter-pill { flex-shrink: 0; padding: 4px 10px; font-size: 0.7rem; }
+            /* Buttons */
+            .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
+            .month-nav button { width: 32px; height: 32px; font-size: 0.85rem; }
+            .month-nav .month-label { min-width: 100px; font-size: 0.82rem; }
+            /* Modal */
+            .modal { width: 96%; margin: 8px; }
+            .modal-body { padding: 14px; }
+            .modal-header { padding: 14px 16px; }
+            .modal-header h3 { font-size: 0.95rem; }
+            .modal-footer { padding: 12px 16px; }
+            .modal-content { width: 95% !important; margin: 10px auto; max-height: 90vh; }
+            /* Toast centered */
+            .toast { left: 16px; right: 16px; transform: translateY(100px); bottom: 72px; }
+            .toast.show { transform: translateY(0); }
+            /* Share box */
+            .share-box { width: 95%; padding: 16px; }
+            /* Category chips */
+            .cat-quick { gap: 4px; }
+            .cat-chip { padding: 4px 10px; font-size: 0.72rem; }
             /* User profile compact */
             .user-name { display: none; }
             .user-profile-btn { padding: 4px 6px; }
-            /* Sync/Import/Export buttons - icon only */
-            .header-right .btn-sm { padding: 6px 8px; font-size: 0.68rem; }
-            /* Fixed summary bar compact */
-            .fixed-summary-bar { flex-direction: column; gap: 4px; padding: 10px 14px; text-align: center; }
-            .fixed-summary-bar .fs-value { font-size: 1rem; }
-            /* Credit card visual compact */
-            .cc-visual { min-height: 140px; padding: 14px 16px; }
-            .cc-balance-val { font-size: 1.2rem; }
-            /* Modal tight */
-            .modal-body { padding: 14px; }
-            .modal-header h3 { font-size: 0.95rem; }
-            /* Category chips compact */
-            .cat-quick { gap: 4px; }
-            .cat-chip { padding: 4px 10px; font-size: 0.72rem; }
         }
-        /* iOS safe area */
+
+        /* ===== RESPONSIVE — TABLET (481px–1024px) ===== */
+        @media (min-width: 481px) and (max-width: 1024px) {
+            .container { padding: 14px; }
+            /* Header: compact with hamburger for extra items */
+            .header { padding: 14px 16px; gap: 10px; }
+            .header-left h1 { font-size: 1.15rem; }
+            .mobile-menu-btn { display: flex; }
+            /* On tablet, show month nav & user profile, hide rest in drawer */
+            .header-right .file-input-wrapper,
+            .header-right .sync-wrapper,
+            .header-right > .btn-outline:not(.sync-btn) { display: none; }
+            .header-right { gap: 8px; }
+            .header-right .btn-sm { padding: 6px 10px; font-size: 0.72rem; }
+            /* Salary: side by side still */
+            .salary-section { grid-template-columns: 1fr 1fr; }
+            /* Summary: 2 columns */
+            .summary-strip { grid-template-columns: repeat(3, 1fr); }
+            .person-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .s-settle-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            /* Charts */
+            .charts-grid { grid-template-columns: 1fr; }
+            /* Tabs: scrollable */
+            .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab { flex: 0 0 auto; white-space: nowrap; padding: 9px 14px; font-size: 0.78rem; }
+            /* Forms */
+            .form-row { flex-direction: column; gap: 0; }
+            input, select, textarea { font-size: 16px !important; }
+            .salary-input { font-size: 16px !important; }
+            /* Settings */
+            .settings-inline { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+            .settings-inline label { margin-left: 0 !important; }
+            .settings-inline input { flex: 1; min-width: 120px; }
+            /* Panel */
+            .panel-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .panel-tools { width: 100%; justify-content: space-between; }
+            .panel-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            /* CC */
+            .cc-summary-strip { grid-template-columns: repeat(2, 1fr); }
+            .cc-cards-grid { grid-template-columns: repeat(2, 1fr); }
+            /* Fixed */
+            .fixed-card { padding: 14px 16px; gap: 10px; }
+            .fixed-card .fc-amount { font-size: 1rem; }
+            /* Expense */
+            .exp-card { padding: 12px 14px; gap: 10px; }
+            .exp-section-body { padding: 10px; gap: 8px; }
+            /* Modal */
+            .modal { width: 90%; max-width: 520px; }
+            .modal-body { padding: 18px; }
+            /* Toast */
+            .toast { left: 50%; right: auto; transform: translateX(-50%) translateY(100px); }
+            .toast.show { transform: translateX(-50%) translateY(0); }
+            .share-box { width: 90%; padding: 20px; }
+            #searchInput { width: 100% !important; }
+            /* Month nav */
+            .month-nav .month-label { min-width: 120px; font-size: 0.85rem; }
+            /* Table */
+            table { font-size: 0.8rem; }
+            thead th, tbody td { padding: 8px 8px; }
+        }
+
+        /* ===== RESPONSIVE — LAPTOP (1025px–1440px) ===== */
+        @media (min-width: 1025px) and (max-width: 1440px) {
+            .container { padding: 20px; max-width: 1200px; }
+            .header { padding: 16px 24px; }
+            .header-left h1 { font-size: 1.3rem; }
+            .summary-strip { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+            .salary-section { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .charts-grid { grid-template-columns: 1fr 1fr; }
+            .cc-cards-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+        }
+
+        /* ===== RESPONSIVE — DESKTOP (>1440px) ===== */
+        @media (min-width: 1441px) {
+            .container { padding: 24px; max-width: 1600px; }
+            .header { padding: 18px 28px; }
+            .summary-strip { grid-template-columns: repeat(5, 1fr); }
+        }
+
+        /* ===== iOS safe area ===== */
         @supports (padding: env(safe-area-inset-top)) {
             .header {
                 padding-top: calc(14px + env(safe-area-inset-top));
@@ -1486,15 +1668,26 @@
                 padding-left: calc(14px + env(safe-area-inset-left));
                 padding-right: calc(14px + env(safe-area-inset-right));
             }
+            @media (max-width: 480px) {
+                .bottom-tab-bar {
+                    padding-bottom: env(safe-area-inset-bottom);
+                }
+                body {
+                    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+                }
+            }
         }
-        /* Touch devices — larger tap targets */
-        @media (hover: none) and (pointer: coarse) {
-            .btn { min-height: 44px; }
-            .btn-sm { min-height: 38px; }
-            .btn-icon { width: 40px; height: 40px; }
-            .tab { min-height: 42px; }
-            .month-nav button { width: 38px; height: 38px; }
-        }
+
+        /* ===== Touch devices — larger tap targets ===== */
+        .is-touch .btn { min-height: 44px; }
+        .is-touch .btn-sm { min-height: 38px; }
+        .is-touch .btn-icon { width: 40px; height: 40px; }
+        .is-touch .tab { min-height: 42px; }
+        .is-touch .month-nav button { width: 38px; height: 38px; }
+        .is-touch .btab { min-height: 44px; }
+        .is-touch .filter-pill { min-height: 32px; display: inline-flex; align-items: center; }
+        .is-touch .ec-check { width: 28px; height: 28px; }
+        .is-touch .cc-card-actions button { width: 32px; height: 32px; }
 
         /* ===== SETTINGS INLINE ===== */
         .settings-inline {
@@ -1577,7 +1770,62 @@
                 </div>
             </div>
         </div>
+        <!-- Hamburger menu button (phone/tablet) -->
+        <button class="mobile-menu-btn" onclick="toggleDrawer()" title="Menu">☰</button>
     </header>
+
+    <!-- Mobile drawer menu -->
+    <div class="header-drawer" id="headerDrawer">
+        <div class="drawer-backdrop" onclick="toggleDrawer()"></div>
+        <div class="drawer-panel">
+            <div class="drawer-title">
+                <span>⚙️ Menu</span>
+                <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+            </div>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">◀</button>
+                <span class="month-label" id="drawerMonthLabel">March 2026</span>
+                <button onclick="changeMonth(1)">▶</button>
+            </div>
+            <div class="drawer-section">
+                <div class="file-input-wrapper" style="width:100%">
+                    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start">📥 Import Data</button>
+                    <input type="file" id="drawerImportFile" accept=".xlsx,.xls,.csv">
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="exportToExcel();toggleDrawer()" style="width:100%;justify-content:flex-start">📤 Export Data</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleSyncMenu();toggleDrawer()" style="width:100%;justify-content:flex-start">☁️ Sync Data</button>
+            </div>
+            <div class="drawer-section">
+                <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Tab Bar (Phone) -->
+    <nav class="bottom-tab-bar" id="bottomTabBar">
+        <div class="bottom-tab-bar-inner">
+            <button class="btab active" data-tab="paylist" onclick="switchTabFromBar(this)">
+                <span class="btab-icon">📝</span>
+                Pay List
+            </button>
+            <button class="btab" data-tab="fixed" onclick="switchTabFromBar(this)">
+                <span class="btab-icon">📌</span>
+                Fixed
+            </button>
+            <button class="btab" data-tab="creditcards" onclick="switchTabFromBar(this)">
+                <span class="btab-icon">💳</span>
+                Cards
+            </button>
+            <button class="btab" data-tab="charts" onclick="switchTabFromBar(this)">
+                <span class="btab-icon">📊</span>
+                Charts
+            </button>
+            <button class="btab" data-tab="monthly" onclick="switchTabFromBar(this)">
+                <span class="btab-icon">📅</span>
+                History
+            </button>
+        </div>
+    </nav>
     <!-- Share Code Modal -->
     <div class="share-overlay" id="shareOverlay">
         <div class="share-box" id="shareBox">
@@ -2424,7 +2672,10 @@
 
         function updateMonthLabel() {
             const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-            document.getElementById('monthLabel').textContent = `${months[currentMonth]} ${currentYear}`;
+            const label = `${months[currentMonth]} ${currentYear}`;
+            document.getElementById('monthLabel').textContent = label;
+            var dml = document.getElementById('drawerMonthLabel');
+            if (dml) dml.textContent = label;
         }
 
         // ========== NAMES ==========
@@ -3294,8 +3545,9 @@
             // Switch to paylist tab
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector('[data-tab="paylist"]').classList.add('active');
+            document.querySelector('.tab[data-tab="paylist"]').classList.add('active');
             document.getElementById('tab-paylist').classList.add('active');
+            syncBottomBar('paylist');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -3394,6 +3646,41 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // ========== DRAWER & BOTTOM TAB BAR ==========
+        function toggleDrawer() {
+            var d = document.getElementById('headerDrawer');
+            d.classList.toggle('open');
+            // Sync month label
+            var ml = document.getElementById('monthLabel');
+            var dml = document.getElementById('drawerMonthLabel');
+            if (ml && dml) dml.textContent = ml.textContent;
+        }
+
+        function switchTabFromBar(btn) {
+            var tab = btn.dataset.tab;
+            // Update bottom bar active state
+            document.querySelectorAll('.btab').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            // Update desktop tabs too
+            document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+            var desktopTab = document.querySelector('.tab[data-tab="' + tab + '"]');
+            if (desktopTab) desktopTab.classList.add('active');
+            // Switch content
+            document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+            document.getElementById('tab-' + tab).classList.add('active');
+            if (tab === 'charts') setTimeout(renderCharts, 100);
+            if (tab === 'creditcards') setTimeout(renderCreditCards, 50);
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Keep bottom bar in sync with desktop tabs
+        function syncBottomBar(tabName) {
+            document.querySelectorAll('.btab').forEach(function(b){
+                b.classList.toggle('active', b.dataset.tab === tabName);
+            });
+        }
+
         // ========== EVENT LISTENERS ==========
         function setupEvents() {
             // Tabs
@@ -3403,6 +3690,7 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+                    syncBottomBar(tab.dataset.tab);
                     if (tab.dataset.tab === 'charts') setTimeout(renderCharts, 100);
                     if (tab.dataset.tab === 'creditcards') setTimeout(renderCreditCards, 50);
                 });
@@ -3420,6 +3708,17 @@
                     e.target.value = '';
                 }
             });
+            // Drawer import file
+            var drawerImport = document.getElementById('drawerImportFile');
+            if (drawerImport) {
+                drawerImport.addEventListener('change', e => {
+                    if (e.target.files.length > 0) {
+                        importExcel(e.target.files[0]);
+                        e.target.value = '';
+                        toggleDrawer();
+                    }
+                });
+            }
 
             // Modal close on overlay
             document.getElementById('expenseModal').addEventListener('click', e => {
