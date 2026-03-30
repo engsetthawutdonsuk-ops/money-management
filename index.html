@@ -3551,11 +3551,12 @@
                     data: {
                         labels: billLabels,
                         datasets: [
-                            { label: prevLabel, data: billPrevData, backgroundColor: 'rgba(148,163,184,0.6)', borderRadius: 6 },
-                            { label: curLabel, data: billCurData, backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 6 }
+                            { label: prevLabel, data: billPrevData, backgroundColor: 'rgba(148,163,184,0.6)', borderRadius: 4 },
+                            { label: curLabel, data: billCurData, backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 4 }
                         ]
                     },
                     options: {
+                        indexAxis: 'y',
                         responsive: true,
                         plugins: {
                             legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
@@ -3576,7 +3577,10 @@
                                 }
                             }
                         },
-                        scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
+                        scales: {
+                            x: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } },
+                            y: { ticks: { font: { size: 10 }, autoSkip: false } }
+                        }
                     }
                 });
             }
