@@ -2501,33 +2501,31 @@
             // Build explanation
             const p1Name = settings.person1;
             const p2Name = settings.person2;
-            const explain1Base = `Paid <b>${fmt(p1ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
-            const explain2Base = `Paid <b>${fmt(p2ActualPaid)}</b> of <b>${fmt(fairShare)}</b> fair share`;
+            const settlementAmount = Math.abs(p1Diff);
 
-            if (Math.abs(p1Diff) < 1) {
+            if (settlementAmount < 1) {
                 settleEl1.className = 's-person-settle even';
                 settleEl1.textContent = 'Settled ✓';
                 settleEl2.className = 's-person-settle even';
                 settleEl2.textContent = 'Settled ✓';
-                explainEl1.innerHTML = `${explain1Base} · Equal — no transfer`;
-                explainEl2.innerHTML = `${explain2Base} · Equal — no transfer`;
+                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b> · เท่ากัน — ไม่ต้องโอน`;
+                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b> · เท่ากัน — ไม่ต้องโอน`;
             } else if (p1Diff > 0) {
-                // Person 1 overpaid
+                // Person 1 overpaid → Person 2 owes Person 1
                 settleEl1.className = 's-person-settle gets';
-                settleEl1.textContent = `💰 +${fmt(p1Diff)}`;
+                settleEl1.textContent = `💰 +${fmt(settlementAmount)}`;
                 settleEl2.className = 's-person-settle owes';
-                settleEl2.textContent = `💸 -${fmt(p1Diff)}`;
-                explainEl1.innerHTML = `${explain1Base} · Overpaid <b>${fmt(p1Diff)}</b> → ${p2Name} pays back`;
-                explainEl2.innerHTML = `${explain2Base} · Underpaid <b>${fmt(p1Diff)}</b> → Send to ${p1Name}`;
+                settleEl2.textContent = `💸 -${fmt(settlementAmount)}`;
+                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายเกินไป <b>${fmt(settlementAmount)}</b> → <b>${p2Name}</b> ต้องโอนคืนให้ <b>${fmt(settlementAmount)}</b>`;
+                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายน้อยไป <b>${fmt(settlementAmount)}</b> → ต้องโอนให้ <b>${p1Name}</b> จำนวน <b>${fmt(settlementAmount)}</b>`;
             } else {
-                // Person 2 overpaid
-                const diff = Math.abs(p1Diff);
+                // Person 2 overpaid → Person 1 owes Person 2
                 settleEl1.className = 's-person-settle owes';
-                settleEl1.textContent = `💸 -${fmt(diff)}`;
+                settleEl1.textContent = `💸 -${fmt(settlementAmount)}`;
                 settleEl2.className = 's-person-settle gets';
-                settleEl2.textContent = `💰 +${fmt(diff)}`;
-                explainEl1.innerHTML = `${explain1Base} · Underpaid <b>${fmt(diff)}</b> → Send to ${p2Name}`;
-                explainEl2.innerHTML = `${explain2Base} · Overpaid <b>${fmt(diff)}</b> → ${p1Name} pays back`;
+                settleEl2.textContent = `💰 +${fmt(settlementAmount)}`;
+                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายน้อยไป <b>${fmt(settlementAmount)}</b> → ต้องโอนให้ <b>${p2Name}</b> จำนวน <b>${fmt(settlementAmount)}</b>`;
+                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายเกินไป <b>${fmt(settlementAmount)}</b> → <b>${p1Name}</b> ต้องโอนคืนให้ <b>${fmt(settlementAmount)}</b>`;
             }
         }
 
