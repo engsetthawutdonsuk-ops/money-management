@@ -125,7 +125,7 @@
         body.dark-mode .bottom-bar { background: #1e293b; border-color: #334155; }
         body.dark-mode .panel { background: var(--card-bg); border-color: var(--border); }
         body.dark-mode .panel-header { border-color: var(--border); }
-        body.dark-mode .settle-banner { background: linear-gradient(135deg, #1e1b4b, #312e81) !important; }
+
         body.dark-mode input,
         body.dark-mode select,
         body.dark-mode textarea {
@@ -563,54 +563,7 @@
             line-height: 1.6;
         }
         .s-person-breakdown b { color: var(--text); }
-        .s-person-breakdown .settle-chip {
-            display: inline-block;
-            padding: 1px 8px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.68rem;
-        }
-        .s-person-breakdown .settle-chip.send { background: #fef2f2; color: #f87171; }
-        .s-person-breakdown .settle-chip.receive { background: #f0fdf4; color: #4ade80; }
-        .s-person-breakdown .settle-chip.even { background: #f8fafc; color: var(--text-light); }
 
-        /* ===== SETTLEMENT BANNER ===== */
-        .settle-banner {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 14px 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .settle-banner::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), #c4b5fd);
-        }
-        .settle-banner.owes::before {
-            background: linear-gradient(90deg, #fca5a5, #fdba74);
-        }
-        .settle-banner.even::before {
-            background: linear-gradient(90deg, #86efac, #6ee7b7);
-        }
-        .settle-main {
-            font-size: 1.05rem;
-            font-weight: 800;
-            margin-bottom: 4px;
-        }
-        .settle-banner.owes .settle-main { color: var(--danger); }
-        .settle-banner.even .settle-main { color: #4ade80; }
-        .settle-detail {
-            font-size: 0.78rem;
-            color: var(--text-light);
-            line-height: 1.5;
-        }
-        .settle-detail b { color: var(--text); }
 
         .summary-item .s-half {
             display: inline-block;
@@ -1627,8 +1580,7 @@
             /* Person row: single column */
             .person-row { grid-template-columns: 1fr; gap: 6px; }
             .summary-item .s-person-val { font-size: 1.1rem; }
-            .settle-banner { padding: 12px 14px; }
-            .settle-main { font-size: 0.95rem; }
+
             /* Salary: side by side for compact */
             .salary-section { grid-template-columns: 1fr 1fr; gap: 6px; }
             .salary-card { padding: 10px; }
@@ -1862,16 +1814,7 @@
         .settings-inline input { padding: 5px 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.8rem; width: 110px; }
         .settings-inline .btn-xs { padding: 5px 12px; font-size: 0.72rem; }
 
-        /* ===== SETTLEMENT (patched from current version) ===== */
-        .s-settle-row { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); text-align: center; }
-        .s-person-settle { font-size: 0.9rem; font-weight: 700; padding: 4px 10px; border-radius: 8px; display: inline-block; }
-        .s-person-settle.even { background: #d1fae5; color: #065f46; }
-        .s-person-settle.gets { background: #dbeafe; color: #1e40af; }
-        .s-person-settle.owes { background: #fee2e2; color: #991b1b; }
-        .s-person-explain { font-size: 0.72rem; color: var(--text-light); margin-top: 4px; line-height: 1.5; }
-        body.dark-mode .s-person-settle.even { background: #064e3b; color: #6ee7b7; }
-        body.dark-mode .s-person-settle.gets { background: #1e3a5f; color: #93c5fd; }
-        body.dark-mode .s-person-settle.owes { background: #4c0519; color: #fca5a5; }
+
 
         /* ===== SYNC MENU (patched from current version) ===== */
         .sync-wrapper { position: relative; }
@@ -2059,7 +2002,7 @@
                 <div class="s-value" id="sumBalance">฿0 <span class="s-half" id="sumBalHalf">÷2 = ฿0 / person</span></div>
             </div>
             <div class="summary-item savings">
-                <div class="s-label">Savings %</div>
+                <div class="s-label">Balance Rate(%)</div>
                 <div class="s-value" id="sumSavings">0%</div>
                 <div class="s-sub">Of total income</div>
             </div>
@@ -2082,10 +2025,6 @@
                     <div class="s-person-sub" id="pbRemainPct1">Remaining</div>
                 </div>
                 <div class="s-person-breakdown" id="pbBreakdown1"></div>
-                <div class="s-settle-row">
-                    <div class="s-person-settle even" id="pbSettle1">All settled ✓</div>
-                    <div class="s-person-explain" id="pbExplain1"></div>
-                </div>
             </div>
             <div class="summary-item person2" id="pbCard2">
                 <div class="s-person-header">
@@ -2097,17 +2036,7 @@
                     <div class="s-person-sub" id="pbRemainPct2">Remaining</div>
                 </div>
                 <div class="s-person-breakdown" id="pbBreakdown2"></div>
-                <div class="s-settle-row">
-                    <div class="s-person-settle even" id="pbSettle2">All settled ✓</div>
-                    <div class="s-person-explain" id="pbExplain2"></div>
-                </div>
             </div>
-        </div>
-
-        <!-- SETTLEMENT BANNER -->
-        <div class="settle-banner" id="settleBanner">
-            <div class="settle-main" id="settleMain">✅ All Settled</div>
-            <div class="settle-detail" id="settleDetail">No transfer needed</div>
         </div>
 
         <!-- TABS -->
@@ -2979,41 +2908,7 @@
             const p2RemainPct = salary2 > 0 ? ((p2Remain / salary2) * 100).toFixed(0) : 0;
             document.getElementById('pbRemainPct2').textContent = `${p2RemainPct}% of ${fmt(salary2)}`;
 
-            // Settlement
-            const settleEl1 = document.getElementById('pbSettle1');
-            const settleEl2 = document.getElementById('pbSettle2');
-            const explainEl1 = document.getElementById('pbExplain1');
-            const explainEl2 = document.getElementById('pbExplain2');
 
-            // Build explanation
-            const p1Name = settings.person1;
-            const p2Name = settings.person2;
-            const settlementAmount = Math.abs(p1Diff);
-
-            if (settlementAmount < 1) {
-                settleEl1.className = 's-person-settle even';
-                settleEl1.textContent = 'Settled ✓';
-                settleEl2.className = 's-person-settle even';
-                settleEl2.textContent = 'Settled ✓';
-                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b> · เท่ากัน — ไม่ต้องโอน`;
-                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b> · เท่ากัน — ไม่ต้องโอน`;
-            } else if (p1Diff > 0) {
-                // Person 1 overpaid → Person 2 owes Person 1
-                settleEl1.className = 's-person-settle gets';
-                settleEl1.textContent = `💰 +${fmt(settlementAmount)}`;
-                settleEl2.className = 's-person-settle owes';
-                settleEl2.textContent = `💸 -${fmt(settlementAmount)}`;
-                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายเกินไป <b>${fmt(settlementAmount)}</b> → <b>${p2Name}</b> ต้องโอนคืนให้ <b>${fmt(settlementAmount)}</b>`;
-                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายน้อยไป <b>${fmt(settlementAmount)}</b> → ต้องโอนให้ <b>${p1Name}</b> จำนวน <b>${fmt(settlementAmount)}</b>`;
-            } else {
-                // Person 2 overpaid → Person 1 owes Person 2
-                settleEl1.className = 's-person-settle owes';
-                settleEl1.textContent = `💸 -${fmt(settlementAmount)}`;
-                settleEl2.className = 's-person-settle gets';
-                settleEl2.textContent = `💰 +${fmt(settlementAmount)}`;
-                explainEl1.innerHTML = `จ่ายไปแล้ว <b>${fmt(p1ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายน้อยไป <b>${fmt(settlementAmount)}</b> → ต้องโอนให้ <b>${p2Name}</b> จำนวน <b>${fmt(settlementAmount)}</b>`;
-                explainEl2.innerHTML = `จ่ายไปแล้ว <b>${fmt(p2ActualPaid)}</b> จากส่วนที่ต้องจ่ายคนละ <b>${fmt(fairShare)}</b><br>จ่ายเกินไป <b>${fmt(settlementAmount)}</b> → <b>${p1Name}</b> ต้องโอนคืนให้ <b>${fmt(settlementAmount)}</b>`;
-            }
         }
 
         let currentFilter = 'all';
