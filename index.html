@@ -4933,6 +4933,8 @@
             // Close drawer if open
             var d = document.getElementById('headerDrawer');
             if (d) d.classList.remove('open');
+            // Auto-scroll to tabs area (just below person cards)
+            scrollToTabs();
         }
 
         function forceRefreshData() {
@@ -4972,8 +4974,20 @@
                 document.querySelectorAll('.btab').forEach(function(b){
                     b.classList.toggle('active', b.getAttribute('data-tab') === tabName);
                 });
+                // Auto-scroll to tabs area on mobile
+                scrollToTabs();
             });
         });
+
+        function scrollToTabs() {
+            if (window.innerWidth > 1024) return;
+            var tabsEl = document.querySelector('.tabs');
+            if (!tabsEl) tabsEl = document.querySelector('.tab-content.active');
+            if (!tabsEl) return;
+            var headerH = document.querySelector('.header') ? document.querySelector('.header').offsetHeight : 0;
+            var top = tabsEl.getBoundingClientRect().top + window.pageYOffset - headerH - 8;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+        }
 
     </script>
 </body>
