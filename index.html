@@ -2100,9 +2100,10 @@
                     <canvas id="monthlyCompChart"></canvas>
                 </div>
             </div>
-            <div class="charts-grid" style="grid-template-columns:1fr; margin-top:0;">
+            <div class="charts-grid">
                 <div class="chart-card">
-                    <h3>Bill-by-Bill Comparison</h3>
+                    <h3>Bill Changes</h3>
+                    <div id="billCompEmpty" style="display:none;text-align:center;color:var(--text-light);font-size:0.82rem;padding:24px 0;">No bill changes between months</div>
                     <canvas id="billCompChart"></canvas>
                 </div>
             </div>
@@ -3523,54 +3524,60 @@
                 }
             });
 
-            // --- Bill-by-Bill Comparison (current vs previous) ---
+            // --- Bill-by-Bill Comparison (only items that changed) ---
             const curExpenses = expenses || [];
             const prevExpenses = prevMd.expenses || [];
             const billMap = {};
             curExpenses.forEach(e => { const k = e.desc || 'Unknown'; billMap[k] = billMap[k] || { cur: 0, prev: 0 }; billMap[k].cur += e.amount; });
             prevExpenses.forEach(e => { const k = e.desc || 'Unknown'; billMap[k] = billMap[k] || { cur: 0, prev: 0 }; billMap[k].prev += e.amount; });
-            const billEntries = Object.entries(billMap).sort((a, b) => Math.max(b[1].cur, b[1].prev) - Math.max(a[1].cur, a[1].prev));
+            // Filter: only bills where the amount actually changed
+            const billEntries = Object.entries(billMap).filter(([, v]) => v.cur !== v.prev).sort((a, b) => Math.max(b[1].cur, b[1].prev) - Math.max(a[1].cur, a[1].prev));
             const billLabels = billEntries.map(([k]) => k);
             const billCurData = billEntries.map(([, v]) => v.cur);
             const billPrevData = billEntries.map(([, v]) => v.prev);
+            const billCanvas = document.getElementById('billCompChart');
+            const billEmpty = document.getElementById('billCompEmpty');
             if (billCompChart) billCompChart.destroy();
-            billCompChart = new Chart(document.getElementById('billCompChart'), {
-                type: 'bar',
-                data: {
-                    labels: billLabels,
-                    datasets: [
-                        { label: prevLabel, data: billPrevData, backgroundColor: 'rgba(148,163,184,0.6)', borderRadius: 4 },
-                        { label: curLabel, data: billCurData, backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => {
-                                    const label = ctx.dataset.label + ': ฿' + ctx.raw.toLocaleString();
-                                    const idx = ctx.dataIndex;
-                                    const cur = billCurData[idx];
-                                    const prev = billPrevData[idx];
-                                    const diff = cur - prev;
-                                    if (ctx.datasetIndex === 1 && prev > 0) {
-                                        const pct = ((diff / prev) * 100).toFixed(0);
-                                        return label + ' (' + (diff >= 0 ? '+' : '') + '฿' + diff.toLocaleString() + ', ' + (diff >= 0 ? '+' : '') + pct + '%)';
+            if (billEntries.length === 0) {
+                billCanvas.style.display = 'none';
+                billEmpty.style.display = 'block';
+            } else {
+                billCanvas.style.display = 'block';
+                billEmpty.style.display = 'none';
+                billCompChart = new Chart(billCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: billLabels,
+                        datasets: [
+                            { label: prevLabel, data: billPrevData, backgroundColor: 'rgba(148,163,184,0.6)', borderRadius: 6 },
+                            { label: curLabel, data: billCurData, backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 6 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => {
+                                        const label = ctx.dataset.label + ': ฿' + ctx.raw.toLocaleString();
+                                        const idx = ctx.dataIndex;
+                                        const cur = billCurData[idx];
+                                        const prev = billPrevData[idx];
+                                        const diff = cur - prev;
+                                        if (ctx.datasetIndex === 1 && prev > 0) {
+                                            const pct = ((diff / prev) * 100).toFixed(0);
+                                            return label + ' (' + (diff >= 0 ? '+' : '') + '฿' + diff.toLocaleString() + ', ' + (diff >= 0 ? '+' : '') + pct + '%)';
+                                        }
+                                        return label;
                                     }
-                                    return label;
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        x: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } },
-                        y: { ticks: { font: { size: 10 }, autoSkip: false } }
+                        },
+                        scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
                     }
-                }
-            });
+                });
+            }
 
             // --- Breakdown horizontal bar ---
             if (breakdownChart) breakdownChart.destroy();
