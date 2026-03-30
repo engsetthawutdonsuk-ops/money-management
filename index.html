@@ -4981,11 +4981,10 @@
 
         function scrollToTabs() {
             if (window.innerWidth > 1024) return;
-            var tabsEl = document.querySelector('.tabs');
-            if (!tabsEl) tabsEl = document.querySelector('.tab-content.active');
-            if (!tabsEl) return;
+            var target = document.querySelector('.tab-content.active');
+            if (!target) return;
             var headerH = document.querySelector('.header') ? document.querySelector('.header').offsetHeight : 0;
-            var top = tabsEl.getBoundingClientRect().top + window.pageYOffset - headerH - 8;
+            var top = target.getBoundingClientRect().top + window.pageYOffset - headerH - 4;
             window.scrollTo({ top: top, behavior: 'smooth' });
         }
 
