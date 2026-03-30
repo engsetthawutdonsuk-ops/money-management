@@ -2894,19 +2894,38 @@
             document.getElementById('pbName1').textContent = settings.person1;
             document.getElementById('pbName2').textContent = settings.person2;
 
-            // Person 1 remaining
-            const r1El = document.getElementById('pbRemain1');
-            r1El.textContent = fmtSigned(p1Remain);
-            r1El.classList.toggle('negative', p1Remain < 0);
-            const p1RemainPct = salary1 > 0 ? ((p1Remain / salary1) * 100).toFixed(0) : 0;
-            document.getElementById('pbRemainPct1').textContent = `${p1RemainPct}% of ${fmt(salary1)}`;
+            // Both persons get Balance ÷ 2 as their share
+            const perPersonBalance = balance / 2;
 
-            // Person 2 remaining
+            // Person 1
+            const r1El = document.getElementById('pbRemain1');
+            r1El.textContent = fmtSigned(perPersonBalance);
+            r1El.classList.toggle('negative', perPersonBalance < 0);
+            const p1BalPct = income > 0 ? ((perPersonBalance / income) * 100).toFixed(0) : 0;
+            document.getElementById('pbRemainPct1').textContent = `Balance/2 · ${p1BalPct}% of income`;
+
+            // Person 2
             const r2El = document.getElementById('pbRemain2');
-            r2El.textContent = fmtSigned(p2Remain);
-            r2El.classList.toggle('negative', p2Remain < 0);
-            const p2RemainPct = salary2 > 0 ? ((p2Remain / salary2) * 100).toFixed(0) : 0;
-            document.getElementById('pbRemainPct2').textContent = `${p2RemainPct}% of ${fmt(salary2)}`;
+            r2El.textContent = fmtSigned(perPersonBalance);
+            r2El.classList.toggle('negative', perPersonBalance < 0);
+            const p2BalPct = income > 0 ? ((perPersonBalance / income) * 100).toFixed(0) : 0;
+            document.getElementById('pbRemainPct2').textContent = `Balance/2 · ${p2BalPct}% of income`;
+
+            // Breakdown explanation in English
+            const bd1 = document.getElementById('pbBreakdown1');
+            const bd2 = document.getElementById('pbBreakdown2');
+            bd1.innerHTML = `Salary <b>${fmt(salary1)}</b> · Paid <b>${fmt(p1ActualPaid)}</b> · Fair share <b>${fmt(fairShare)}</b><br>` +
+                (p1Diff > 0
+                    ? `Overpaid by <b>${fmt(Math.abs(p1Diff))}</b> → ${settings.person2} owes ${settings.person1}`
+                    : p1Diff < 0
+                        ? `Underpaid by <b>${fmt(Math.abs(p1Diff))}</b> → ${settings.person1} owes ${settings.person2}`
+                        : `Paid exactly fair share — no transfer needed`);
+            bd2.innerHTML = `Salary <b>${fmt(salary2)}</b> · Paid <b>${fmt(p2ActualPaid)}</b> · Fair share <b>${fmt(fairShare)}</b><br>` +
+                (p1Diff < 0
+                    ? `Overpaid by <b>${fmt(Math.abs(p1Diff))}</b> → ${settings.person1} owes ${settings.person2}`
+                    : p1Diff > 0
+                        ? `Underpaid by <b>${fmt(Math.abs(p1Diff))}</b> → ${settings.person2} owes ${settings.person1}`
+                        : `Paid exactly fair share — no transfer needed`);
 
 
         }
