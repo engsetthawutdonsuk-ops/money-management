@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>💑 Money Management - Login</title>
-    <link rel="manifest" href="manifest.json">
+    <!-- PWA disabled — prevents standalone mode breaking auth redirects -->
+    <!-- <link rel="manifest" href="manifest.json"> -->
     <meta name="theme-color" content="#6366f1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Money Mgmt">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -283,6 +287,14 @@
     </div>
 
     <script>
+        // ===== NUKE old service workers & caches (same as index.html) =====
+        if ('serviceWorker' in navigator) {
+            caches.keys().then(names => names.forEach(n => caches.delete(n)));
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
+            });
+        }
+
         const firebaseConfig = window.FIREBASE_CONFIG;
 
         if (!firebaseConfig || !firebaseConfig.apiKey) {
@@ -296,40 +308,62 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
+        // Explicitly set LOCAL persistence (survives page reloads, avoids ITP issues)
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(e) {
+            console.warn('setPersistence failed:', e);
+        });
+
         function isEmbeddedBrowser() {
             const ua = navigator.userAgent || '';
             return /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
         }
 
+        function loginSuccess(user) {
+            localStorage.setItem('user_uid', user.uid);
+            localStorage.setItem('user_email', user.email);
+            localStorage.setItem('user_name', user.displayName || '');
+            localStorage.setItem('user_photo', user.photoURL || '');
+            localStorage.removeItem('auth_redirect_pending');
+            window.location.href = 'index.html';
+        }
+
         // Check if user is already logged in
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // User is logged in, redirect to main app
-                window.location.href = 'index.html';
+                loginSuccess(user);
             }
         });
 
         // Google Login Button
         const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const btnText = document.getElementById('btnText');
         const errorMessage = document.getElementById('errorMessage');
 
+        // Handle return from redirect-based auth
         auth.getRedirectResult().then((result) => {
             if (result && result.user) {
-                const user = result.user;
-                localStorage.setItem('user_uid', user.uid);
-                localStorage.setItem('user_email', user.email);
-                localStorage.setItem('user_name', user.displayName || '');
-                localStorage.setItem('user_photo', user.photoURL || '');
-                window.location.href = 'index.html';
+                loginSuccess(result.user);
+            } else if (localStorage.getItem('auth_redirect_pending')) {
+                // Redirect returned but no result — auth state may still load via onAuthStateChanged
+                // Wait a moment, then show error if still not logged in
+                setTimeout(() => {
+                    if (!auth.currentUser) {
+                        localStorage.removeItem('auth_redirect_pending');
+                        errorMessage.style.display = 'block';
+                        errorMessage.textContent = 'Login did not complete. Please try again. If this persists, clear Safari website data for this site.';
+                    }
+                }, 3000);
             }
         }).catch((error) => {
+            localStorage.removeItem('auth_redirect_pending');
+            console.error('Redirect result error:', error);
             errorMessage.style.display = 'block';
             if (error.code === 'auth/unauthorized-domain') {
-                errorMessage.textContent = 'Domain is not authorized in Firebase Authentication settings.';
+                errorMessage.textContent = 'Domain not authorized. Ask the app owner to add this domain in Firebase Console → Authentication → Settings → Authorized domains.';
             } else if (error.code === 'auth/operation-not-allowed') {
                 errorMessage.textContent = 'Google provider is not enabled in Firebase Authentication.';
             } else {
-                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.textContent = 'Login error: ' + error.message;
             }
         });
 
@@ -342,37 +376,49 @@
                 provider.addScope('profile');
                 provider.addScope('email');
 
+                // Embedded browsers (LINE, Facebook, IG) cannot open popups
                 if (isEmbeddedBrowser()) {
+                    localStorage.setItem('auth_redirect_pending', '1');
                     await auth.signInWithRedirect(provider);
                     return;
                 }
 
-                const result = await auth.signInWithPopup(provider);
-                const user = result.user;
-                localStorage.setItem('user_uid', user.uid);
-                localStorage.setItem('user_email', user.email);
-                localStorage.setItem('user_name', user.displayName || '');
-                localStorage.setItem('user_photo', user.photoURL || '');
-                window.location.href = 'index.html';
+                // Try popup first (most reliable on modern browsers)
+                try {
+                    const result = await auth.signInWithPopup(provider);
+                    if (result && result.user) {
+                        loginSuccess(result.user);
+                    }
+                } catch (popupError) {
+                    console.warn('Popup sign-in failed (' + popupError.code + '), falling back to redirect');
+                    // For popup-related failures, fall back to redirect
+                    if (popupError.code === 'auth/popup-blocked' ||
+                        popupError.code === 'auth/popup-closed-by-user' ||
+                        popupError.code === 'auth/cancelled-popup-request' ||
+                        popupError.code === 'auth/operation-not-supported-in-this-environment') {
+                        localStorage.setItem('auth_redirect_pending', '1');
+                        btnText.textContent = 'Redirecting...';
+                        await auth.signInWithRedirect(provider);
+                    } else {
+                        throw popupError;
+                    }
+                }
             } catch (error) {
                 googleLoginBtn.classList.remove('loading');
+                console.error('Login error:', error);
                 errorMessage.style.display = 'block';
 
-                if (error.code === 'auth/popup-closed-by-user') {
-                    errorMessage.textContent = 'Login cancelled. Please try again.';
-                } else if (error.code === 'auth/popup-blocked') {
-                    errorMessage.textContent = 'Pop-up was blocked. Please allow pop-ups and try again.';
-                } else if (error.code === 'auth/network-request-failed') {
+                if (error.code === 'auth/network-request-failed') {
                     errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    errorMessage.textContent = 'Domain not authorized. Ask the app owner to add this domain in Firebase Console.';
                 } else if (error.code === 'auth/disallowed-useragent') {
-                    errorMessage.textContent = 'Google blocks sign-in inside in-app browsers. Please open this page in Safari or Chrome and try again.';
+                    errorMessage.textContent = 'Please open this page in Safari or Chrome to sign in.';
                 } else if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('API key not valid'))) {
-                    errorMessage.textContent = 'Firebase API key is invalid. Update apiKey in firebase-config.js and allow this domain in Firebase Auth settings.';
+                    errorMessage.textContent = 'Firebase API key is invalid.';
                 } else {
-                    errorMessage.textContent = `Error: ${error.message}`;
+                    errorMessage.textContent = 'Login error: ' + error.message;
                 }
-
-                console.error('Login error:', error);
             }
         });
     </script>
