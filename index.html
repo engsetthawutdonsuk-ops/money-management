@@ -1927,25 +1927,6 @@
                 <span class="month-label" id="monthLabel">February 2026</span>
                 <button onclick="changeMonth(1)" title="Next month">▶</button>
             </div>
-            <div class="file-input-wrapper">
-                <button class="btn btn-outline btn-sm">📥 Import</button>
-                <input type="file" id="importFile" accept=".xlsx,.xls,.csv">
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="exportToExcel()">📤 Export</button>
-            <div class="sync-wrapper">
-                <button class="btn btn-outline btn-sm sync-btn" onclick="toggleSyncMenu()" title="Sync data between devices">
-                    ☁️ Sync
-                </button>
-                <div class="sync-menu" id="syncMenu">
-                    <div class="sync-menu-title">☁️ Sync</div>
-                    <div class="sync-cloud-status" id="cloudStatus"></div>
-                    <button onclick="doSyncNow()">⚡ Sync Now</button>
-                    <button onclick="copyShareLink()" style="color:var(--primary); font-weight:800;">📎 Share Link</button>
-                    <div class="sync-menu-sub">One action to save your changes and get the latest updates.</div>
-                    <div class="sync-menu-divider"></div>
-                    <div class="sync-info" id="syncInfo">Status: Ready</div>
-                </div>
-            </div>
         </div>
         <!-- Hamburger menu button (phone/tablet) -->
         <button class="mobile-menu-btn" onclick="toggleDrawer()" title="Menu">☰</button>
@@ -1967,8 +1948,6 @@
 
             <div class="drawer-section">
                 <button class="btn btn-ghost btn-sm" onclick="toggleDarkMode()" style="width:100%;justify-content:flex-start;" id="drawerDarkBtn">🌙 Dark Mode</button>
-                <button class="btn btn-ghost btn-sm" onclick="forceRefreshData()" style="width:100%;justify-content:flex-start;">🔄 Refresh Data</button>
-                <button class="btn btn-ghost btn-sm" onclick="forceClearAndReload()" style="width:100%;justify-content:flex-start;color:var(--warning);">⚡ Force Reload</button>
                 <button class="btn btn-ghost btn-sm" onclick="logoutUser()" style="width:100%;justify-content:flex-start;color:var(--danger)">🚪 Logout</button>
             </div>
             <div style="font-size:0.6rem;color:var(--text-light);text-align:center;padding-top:8px;border-top:1px solid var(--border);">
@@ -2019,15 +1998,6 @@
 
     <!-- MAIN -->
     <div class="container">
-
-        <!-- PERSON NAMES SETTINGS -->
-        <div class="settings-inline">
-            <label>👤 Person 1:</label>
-            <input type="text" id="person1Name" placeholder="Your name" value="Me">
-            <label style="margin-left:12px;">👤 Person 2:</label>
-            <input type="text" id="person2Name" placeholder="Partner name" value="My Love">
-            <button class="btn btn-primary btn-xs" onclick="saveNames()" style="margin-left:auto;">Save Names</button>
-        </div>
 
         <!-- SALARY INPUT -->
         <div class="salary-section">
