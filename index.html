@@ -2096,8 +2096,8 @@
                     <canvas id="categoryChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Top Expense Categories</h3>
-                    <canvas id="topCatChart"></canvas>
+                    <h3>Monthly Comparison</h3>
+                    <canvas id="monthlyCompChart"></canvas>
                 </div>
             </div>
         </div>
@@ -3448,7 +3448,7 @@
         }
 
         // ========== CHARTS ==========
-        let categoryChart, topCatChart, breakdownChart, incomeVsExpChart, personPieChart;
+        let categoryChart, monthlyCompChart, breakdownChart, incomeVsExpChart, personPieChart;
 
         function renderCharts() {
             const md = getMonthData();
@@ -3484,21 +3484,35 @@
                 }
             });
 
-            // --- Top Categories (new) ---
-            // Build arrays of category labels/values sorted by amount and take top 3
-            const catPairs = catLabels.map((l, idx) => ({ label: l, value: catValues[idx], color: COLORS[idx % COLORS.length] }));
-            catPairs.sort((a,b) => b.value - a.value);
-            const topCats = catPairs.slice(0, 3);
-            if (topCatChart) topCatChart.destroy();
-            topCatChart = new Chart(document.getElementById('topCatChart'), {
+            // --- Monthly Comparison (current vs previous) ---
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            const prevKey = monthKey(prevMonth, prevYear);
+            const prevMd = data[prevKey] || { salary1: 0, salary2: 0, expenses: [] };
+            const prevIncome = (prevMd.salary1 || 0) + (prevMd.salary2 || 0);
+            const prevExp = (prevMd.expenses || []).reduce((s, e) => s + e.amount, 0);
+            const curIncome = (md.salary1 || 0) + (md.salary2 || 0);
+            const curExp = expenses.reduce((s, e) => s + e.amount, 0);
+            const prevBal = prevIncome - prevExp;
+            const curBal = curIncome - curExp;
+            const prevLabel = new Date(prevYear, prevMonth).toLocaleString('en', { month: 'short' });
+            const curLabel = new Date(currentYear, currentMonth).toLocaleString('en', { month: 'short' });
+            if (monthlyCompChart) monthlyCompChart.destroy();
+            monthlyCompChart = new Chart(document.getElementById('monthlyCompChart'), {
                 type: 'bar',
                 data: {
-                    labels: topCats.map(c => c.label),
-                    datasets: [{ data: topCats.map(c => c.value), backgroundColor: topCats.map(c => c.color), borderRadius: 8 }]
+                    labels: ['Income', 'Expenses', 'Balance'],
+                    datasets: [
+                        { label: prevLabel, data: [prevIncome, prevExp, prevBal], backgroundColor: 'rgba(148,163,184,0.6)', borderRadius: 6 },
+                        { label: curLabel, data: [curIncome, curExp, curBal], backgroundColor: 'rgba(99,102,241,0.75)', borderRadius: 6 }
+                    ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '฿' + ctx.raw.toLocaleString() } } },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ฿' + ctx.raw.toLocaleString() } }
+                    },
                     scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
                 }
             });
