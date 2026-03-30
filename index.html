@@ -972,7 +972,8 @@
             box-shadow: var(--shadow-lg);
             animation: slideUp 0.25s ease;
             max-height: 90vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         @keyframes slideUp {
             from { transform: translateY(24px); opacity: 0; }
@@ -986,7 +987,7 @@
             justify-content: space-between;
         }
         .modal-header h3 { font-size: 1.05rem; font-weight: 800; }
-        .modal-body { padding: 22px; }
+        .modal-body { padding: 22px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
         .modal-footer {
             padding: 14px 22px;
             border-top: 1px solid var(--border);
@@ -998,6 +999,8 @@
         /* ===== FORM ===== */
         .form-row { display: flex; gap: 14px; }
         .form-row .form-group { flex: 1; }
+        .form-row-compact { display: flex; gap: 10px; }
+        .form-row-compact .form-group { flex: 1; min-width: 0; }
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -1667,13 +1670,17 @@
             .month-nav button { width: 32px; height: 32px; font-size: 0.85rem; }
             .month-nav .month-label { min-width: 100px; font-size: 0.82rem; }
             /* Modal — MOBILE OPTIMIZED */
-            .modal-overlay { padding: 8px; align-items: flex-end; }
+            .modal-overlay { padding: 0; align-items: flex-end; }
             .modal { width: 100%; max-width: 100%; margin: 0; border-radius: 16px 16px 0 0; max-height: 92vh; }
             .modal-body { padding: 14px; }
             .modal-header { padding: 14px 16px; }
             .modal-header h3 { font-size: 0.95rem; }
             .modal-footer { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+            .modal-footer .btn { flex: 1; min-width: 0; text-align: center; justify-content: center; }
             .modal-content { width: 100% !important; margin: 0; max-height: 92vh; }
+            /* Keep date+amount and paidby+note side by side on mobile */
+            .form-row-compact { flex-direction: row !important; gap: 8px; }
+            .form-row-compact .form-group { margin-bottom: 12px; }
             /* Receipt upload area mobile */
             .receipt-upload-area { min-height: 56px; padding: 10px; }
             .receipt-placeholder { font-size: 0.78rem; }
@@ -1681,8 +1688,8 @@
             /* Tag chips in modal */
             .tag-quick { gap: 4px; }
             .tag-quick .tag-chip { padding: 5px 10px; font-size: 0.72rem; }
-            /* Category chips */
-            .cat-quick { gap: 4px; flex-wrap: wrap; }
+            /* Category chips — scrollable on mobile */
+            .cat-quick { gap: 4px; flex-wrap: wrap; max-height: 96px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
             .cat-chip { padding: 5px 10px; font-size: 0.72rem; }
             /* Toast centered above bottom bar */
             .toast { left: 16px; right: 16px; transform: translateY(100px); bottom: 72px; }
@@ -2303,7 +2310,7 @@
                 <button class="btn-icon" onclick="closeExpenseModal()" style="font-size:1.15rem;">✕</button>
             </div>
             <div class="modal-body">
-                <div class="form-row">
+                <div class="form-row form-row-compact">
                     <div class="form-group">
                         <label>Date</label>
                         <input type="date" id="expDate">
@@ -2322,7 +2329,7 @@
                     <div class="cat-quick" id="catQuickSelect"></div>
                     <input type="text" id="expCategory" placeholder="Or type a custom category..." style="margin-top:8px;">
                 </div>
-                <div class="form-row">
+                <div class="form-row form-row-compact">
                     <div class="form-group">
                         <label>Paid By</label>
                         <select id="expPaidBy">
@@ -2335,8 +2342,6 @@
                         <label>Note (optional)</label>
                         <input type="text" id="expNote" placeholder="Any additional note...">
                     </div>
-                </div>
-
                 </div>
                 <input type="hidden" id="editExpIndex" value="-1">
             </div>
