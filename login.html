@@ -296,11 +296,9 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        function isMobileOrEmbeddedBrowser() {
+        function isEmbeddedBrowser() {
             const ua = navigator.userAgent || '';
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-            const isEmbedded = /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
-            return isMobile || isEmbedded;
+            return /FBAN|FBAV|Instagram|Line|Twitter|wv|WebView/i.test(ua);
         }
 
         // Check if user is already logged in
@@ -344,7 +342,7 @@
                 provider.addScope('profile');
                 provider.addScope('email');
 
-                if (isMobileOrEmbeddedBrowser()) {
+                if (isEmbeddedBrowser()) {
                     await auth.signInWithRedirect(provider);
                     return;
                 }
